@@ -35,38 +35,6 @@ This project uses the **Skin Lesions Classification Dataset** hosted on Kaggle.
 - Rich variety of lesion types, helpful for building a robust classifier  
 - You’ll likely need preprocessing (resizing, augmentation, normalization) to get best performance  
 
----
-
-## ⚙️ Installation & Setup
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/your-username/nexderm.git
-cd nexderm
-```
-
-### 2. Backend Setup
-```bash
-cd backend
-npm install
-npm start
-```
-
-### 3. ML Model Setup
-```bash
-cd model
-pip install -r requirements.txt
-python train.py
-```
-
-### 4. Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
-
----
 
 ## 🏃 Usage
 1. Launch NexDerm on your device (web or mobile).  
