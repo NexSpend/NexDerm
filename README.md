@@ -1,33 +1,104 @@
-# NexDerm 
-**AI-powered finance tracking & expense sharing application**
+# NexDerm – AI‑Powered Skin Disease Classification & Dermatology Support
 
-NexSpend is a **modern finance management tool** that helps you stay on top of your expenses, split costs with friends, and make smarter financial decisions. Built with a clean interface and powered by **AI/ML-driven predictions**, it provides insights into your future spending patterns so you can save more and plan better.  
+## 📌 Overview  
+**NexDerm** is a machine learning–driven application designed to help in the early detection of dermatological conditions.  
+Users can upload or capture images of skin lesions, which are then processed by a deep learning classifier. The system provides a classification (e.g. healthy vs. possible skin condition) and, when a condition is suspected, suggests nearby dermatologists based on the user’s location.
 
----
-
-## ✨ Features  
-- 🔍 **Smart expense tracking** – Record and categorize your daily transactions  
-- 📊 **AI-powered predictions** – Get personalized forecasts for upcoming expenses & budgets  
-- 🤝 **Expense sharing (Splitwise-style)** – Split bills with friends and track balances effortlessly  
-- 📈 **Visual dashboards** – Charts and summaries of your spending habits  
-- 🔔 **Reminders & notifications** – Stay on top of bills and due payments  
-- ☁️ **Cloud sync** – Access your data anywhere, across devices  
+This project demonstrates the practical fusion of **AI diagnostics** with **real-world utility** in dermatology support.
 
 ---
 
-## 🛠️ Tech Stack  
-- **Frontend**: React / Next.js, Tailwind CSS  
-- **Backend**: Node.js (Express) / Django / Flask  
-- **Database**: PostgreSQL / MongoDB  
-- **AI/ML**: Python (scikit-learn, TensorFlow, or PyTorch)  
-- **APIs**: Currency conversion, payment integrations  
+## 🚀 Features
+- 📸 **Image Input** — Upload from gallery or capture using device camera  
+- 🧠 **Deep Learning Model** — Classifies skin lesions into healthy or disease categories  
+- 🩺 **Insights & Suggestions** — Offers possible condition indications  
+- 📍 **Dermatologist Locator** — Recommends specialties near user’s geolocation  
+- 🎨 **Clean, Intuitive UI** — Designed for ease of use and clarity  
 
 ---
 
-## 🤝 Contributing  
-Contributions are welcome! Please open an issue or submit a pull request.  
+## 🧑‍💻 Tech Stack
+- **Frontend:** React Native or React  
+- **Backend:** Node.js + Express  
+- **Machine Learning / Data Science:** Python (TensorFlow, PyTorch, scikit-learn)  
+- **Database / Storage:** PostgreSQL, Firebase, or equivalent  
+- **APIs / Services:**
+  - Geolocation / Maps API (e.g. Google Maps, OpenStreetMap)  
+  - Possibly a dermatologist directory API (if available)  
 
 ---
 
-## 📜 License  
-This project is licensed under the [MIT License](LICENSE).  
+## 📊 Dataset  
+This project uses the **Skin Lesions Classification Dataset** hosted on Kaggle.  
+- **Dataset URL:** [Kaggle – Skin DS](https://www.kaggle.com/datasets/ahmedxc4/skin-ds/data)  
+- Contains thousands of labeled images of skin lesions (including healthy and multiple disease classes)  
+- Rich variety of lesion types, helpful for building a robust classifier  
+- You’ll likely need preprocessing (resizing, augmentation, normalization) to get best performance  
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/nexderm.git
+cd nexderm
+```
+
+### 2. Backend Setup
+```bash
+cd backend
+npm install
+npm start
+```
+
+### 3. ML Model Setup
+```bash
+cd model
+pip install -r requirements.txt
+python train.py
+```
+
+### 4. Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
+
+---
+
+## 🏃 Usage
+1. Launch NexDerm on your device (web or mobile).  
+2. Upload or take a photo of your skin lesion.  
+3. The model classifies the image.  
+4. If a potential condition is predicted, view a ranked list of nearby dermatologists.
+
+---
+
+## 📌 Project Structure
+```
+├── backend/         # Node.js server & API endpoints
+├── frontend/        # React / React Native application
+├── model/           # Training, evaluation, inference scripts & models
+├── data/            # Dataset download, preprocessing, augmentation
+├── docs/            # Reports, diagrams, documentation
+└── README.md
+```
+
+---
+
+## 🧪 Experimental & Future Enhancements
+- Use transfer learning (e.g. EfficientNet, ResNet, DenseNet) to boost performance  
+- Hyperparameter tuning, cross-validation, and ensembling  
+- Optimize inference speed (model pruning, quantization)  
+- Add support for multiple languages and better UX  
+- Integrate with dermatologist databases or EHR systems  
+- Add a “history” or “case log” feature for users to track past scans  
+
+---
+
+## ⚠️ Disclaimer
+**NexDerm is an educational / research project.**  
+It is **not a substitute for professional medical advice or diagnosis.**  
+Always consult a licensed dermatologist for medical decisions and treatment.
