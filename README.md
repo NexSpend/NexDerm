@@ -1,4 +1,4 @@
-# NexSpend 💸  
+# NexDerm 🍆
 **AI-powered finance tracking & expense sharing application**
 
 NexSpend is a **modern finance management tool** that helps you stay on top of your expenses, split costs with friends, and make smarter financial decisions. Built with a clean interface and powered by **AI/ML-driven predictions**, it provides insights into your future spending patterns so you can save more and plan better.  
