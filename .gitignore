@@ -1,0 +1,6 @@
+# --- Environment Secrets ---
+# Never commit your secret keys!
+.env
+*.env
+.env.local
+ 
