@@ -11,7 +11,9 @@ import {
   Alert,
   Platform,
   Dimensions,
+  Linking,
 } from "react-native";
+import * as Location from "expo-location";
 
 interface AnalysisResult {
   condition: string;
@@ -64,14 +66,28 @@ export default function ResultsScreen({ route, navigation }: any) {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleFindDermatologist = () => {
-    // For now, show an alert since we don't have DermatologistMap integrated
-    // Once integrated, uncomment the navigation line below
-    // navigation.navigate("DermatologistMap", { analysisResult: result });
-    Alert.alert(
-      "Coming Soon",
-      "Dermatologist finder will be available soon. For now, please use the results to consult with your healthcare provider."
-    );
+  const handleFindDermatologist = async () => {
+    try {
+      // Request location permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "Location access is required to find nearby dermatologists.");
+        return;
+      }
+
+      // Get user's current location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude, longitude } = location.coords;
+
+      // Open Google Maps with user's location
+      const googleMapsUrl = `https://www.google.com/maps/search/dermatologist/@${latitude},${longitude},15z`;
+      await Linking.openURL(googleMapsUrl);
+    } catch (error) {
+      Alert.alert("Error", "Failed to open maps. Please try again.");
+    }
   };
 
   const handleNewAnalysis = () => {
