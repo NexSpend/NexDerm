@@ -7,10 +7,16 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import ResultsScreen from "./src/pages/Results";
 
-export default function App() {
+const Stack = createStackNavigator();
+
+function HomeScreen({ navigation }: any) {
   // Holds the selected image URI (null = none yet)
   const [image, setImage] = useState<string | null>(null);
 
@@ -38,7 +44,8 @@ export default function App() {
       Alert.alert("No Image", "Please upload an image first.");
       return;
     }
-    Alert.alert("Detection Started", "Simulating detection on the uploaded image...");
+    // Navigate to results screen with the image
+    navigation.navigate("Results", { imageUri: image });
   };
 
   return (
@@ -171,3 +178,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animationEnabled: true,
+        }}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Results" component={ResultsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
