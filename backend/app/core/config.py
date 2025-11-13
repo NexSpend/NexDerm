@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
     # ML Model settings
-    MODEL_PATH: str = "app/models/ml/skin_disease_model.h5"
+    MODEL_PATH: str = "app/models/ml/artifacts/densenet_skin_best.pth"
     
     # Other settings
     UPLOAD_FOLDER: str = "uploads"
