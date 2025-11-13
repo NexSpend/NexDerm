@@ -24,7 +24,7 @@ async def classify_image(
     label, confidence = model_service.predict_from_image_bytes(image_bytes)
     
     # 2. Return the result directly as a dictionary
-    return {"label": label, 
+    return {"prediction": label, 
             "confidence": confidence, 
             "recommendations": "This is a demo response. Please consult a dermatologist."
             }
