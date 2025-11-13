@@ -12,12 +12,16 @@ import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
 import { commonStyles, colors } from './src/utils/commonStyles';
+import { uploadImage } from './src/services/api';
 
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [showInference, setShowInference] = useState(false);
+  const [inferenceResult, setInferenceResult] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -36,17 +40,37 @@ export default function App() {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
-  const handleStartDetection = () => {
+  const handleStartDetection = async () => {
     if (!image) {
       Alert.alert("No Image", "Please upload an image first.");
       return;
     }
-    setShowInference(true);
+
+    try {
+      const result = await uploadImage(image);
+
+      // Optional: keep a quick alert
+      // Alert.alert(
+      //   "Detection Results",
+      //   `Prediction: ${result.prediction}\nConfidence: ${
+      //     (result.confidence <= 1 ? result.confidence * 100 : result.confidence).toFixed(1)
+      //   }%\n\n${result.recommendations || ""}`
+      // );
+
+      setInferenceResult(result);
+      setShowInference(true);
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to process image. Please try again."
+      );
+      console.error(error);
+    }
   };
 
   const handleFindDermatologists = () => {
     Alert.alert(
-      "Find Dermatologists", 
+      "Find Dermatologists",
       "This feature will show nearby dermatologists. Coming soon!"
     );
   };
@@ -54,8 +78,9 @@ export default function App() {
   const handleBackToUpload = () => {
     setShowInference(false);
     setImage(null);
+    setInferenceResult(null);
   };
-  
+
   if (!isAuthenticated && !isGuest) {
     return (
       <AuthScreen
@@ -65,10 +90,11 @@ export default function App() {
     );
   }
 
-  if (showInference && image) {
+  if (showInference && image && inferenceResult) {
     return (
       <InferencePage
         imageUri={image}
+        result={inferenceResult}
         onBackToUpload={handleBackToUpload}
       />
     );
