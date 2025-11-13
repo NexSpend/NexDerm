@@ -5,7 +5,7 @@ api_router = APIRouter()
 # routees to add later - auth, image, dermatalogists etc
 
 # Import and include other routers
-from app.api.api_v1.endpoints import (
+from app.api.api_v1.endpoints.general_routes import (
     ping,
     users,
     predictions,
