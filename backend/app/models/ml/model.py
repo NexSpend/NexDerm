@@ -23,7 +23,7 @@ class DenseNetDiseaseClassifier:
 
     def load_from_checkpoint(self, checkpoint_path: str | pathlib.Path):
         """
-        Loads the model, weights, and preprocessing info from a checkpoint file.
+        Loads the model, weights, and preprocessing info from checkpoint file.
         """
         if not pathlib.Path(checkpoint_path).exists():
             raise FileNotFoundError(f"Checkpoint file not found at {checkpoint_path}")
@@ -33,10 +33,10 @@ class DenseNetDiseaseClassifier:
         class_to_idx = ckpt.get("class_to_idx", {})
         num_classes = len(class_to_idx)
         
-        # Invert mapping to create idx -> class name
+        # Invert mapping
         self.idx_to_class = [k for k, v in sorted(class_to_idx.items(), key=lambda item: item[1])]
 
-        # Define the image transformation based on saved normalization values
+        # Image transformation
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -52,7 +52,6 @@ class DenseNetDiseaseClassifier:
             weights = models.DenseNet121_Weights.IMAGENET1K_V1
             self.model = models.densenet121(weights=weights)
         except AttributeError:
-            # Fallback for older torchvision versions
             self.model = models.densenet121(pretrained=True)
 
         # Replace the classifier head with the correct number of output classes
@@ -63,10 +62,10 @@ class DenseNetDiseaseClassifier:
         self.model.to(self.device)
         self.model.eval()
         
-        print(f"✓ Model loaded from {checkpoint_path} on device: {self.device}")
+        print(f"Model loaded from {checkpoint_path} on device: {self.device}")
 
     def preprocess_image(self, image: Image.Image) -> torch.Tensor:
-        """Preprocesses a PIL image to a model-ready tensor."""
+        """Preprocesses image to tensor for inference."""
         if self.transform is None:
             raise RuntimeError("Transformation not initialized. Load model first.")
         if image.mode != "RGB":
@@ -74,7 +73,7 @@ class DenseNetDiseaseClassifier:
         return self.transform(image).unsqueeze(0).to(self.device)
 
     def predict(self, image: Image.Image) -> Tuple[str, float]:
-        """Predicts the class and confidence for a single PIL image."""
+        """Predicts the class and confidence for uploaded image."""
         if self.model is None or self.idx_to_class is None:
             raise RuntimeError("Model not loaded. Call load_from_checkpoint() first.")
 
