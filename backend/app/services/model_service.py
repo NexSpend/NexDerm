@@ -27,7 +27,7 @@ class ModelService:
         """Loads the model from the path specified in the settings."""
         model_path = pathlib.Path(settings.MODEL_PATH)
         
-        # Basic config for the classifier
+        # Config for the classifier
         config = {
             "device": "cuda" if torch.cuda.is_available() else "cpu",
         }
@@ -39,16 +39,10 @@ class ModelService:
 
     def predict_from_image_bytes(self, image_bytes: bytes) -> Tuple[str, float]:
         """
-        Makes a prediction from image bytes.
-        
-        Args:
-            image_bytes: The bytes of the image file.
-            
-        Returns:
-            A tuple of (predicted_label, confidence_score).
+        Makes a prediction from image bytes and returns the label and confidence.
         """
         image = Image.open(io.BytesIO(image_bytes))
         return self.classifier.predict(image)
 
-# Create a single instance of the service that will be imported by other modules
+# Create a single instance of the service
 model_service = ModelService()
