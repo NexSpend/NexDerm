@@ -13,7 +13,9 @@ import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
+import LoadingScreen from "./src/pages/LoadingScreen";
 
+// All the imports
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,7 +31,7 @@ export default function App() {
       Alert.alert("Permission Denied", "Please allow photo access to upload.");
       return;
     }
-
+// Launches expo's image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -39,7 +41,7 @@ export default function App() {
 
     if (!result.canceled) setImage(result.assets[0].uri);
   };
-
+// Handles the image upload and inference process
   const handleStartDetection = async () => {
     if (!image) {
       Alert.alert("No Image", "Please upload an image first.");
@@ -47,24 +49,35 @@ export default function App() {
     }
 
     try {
-      const result = await uploadImage(image);
+      setIsLoading(true);
 
-      // Optional: keep a quick alert
-      // Alert.alert(
-      //   "Detection Results",
-      //   `Prediction: ${result.prediction}\nConfidence: ${
-      //     (result.confidence <= 1 ? result.confidence * 100 : result.confidence).toFixed(1)
-      //   }%\n\n${result.recommendations || ""}`
-      // );
+      const MIN_TIME = 2500; // 2.5 seconds minimum
+      const start = Date.now();
+      const predictionPromise = uploadImage(image);
+
+      // Wait for backend result
+      const result = await predictionPromise;
+
+      const elapsed = Date.now() - start;
+
+      // If backend was too fast, wait extra time
+      if (elapsed < MIN_TIME) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, MIN_TIME - elapsed)
+        );
+      }
 
       setInferenceResult(result);
       setShowInference(true);
+
     } catch (error) {
       Alert.alert(
         "Error",
         "Failed to process image. Please try again."
       );
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,7 +102,9 @@ export default function App() {
       />
     );
   }
-
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
   if (showInference && image && inferenceResult) {
     return (
       <InferencePage
@@ -99,7 +114,7 @@ export default function App() {
       />
     );
   }
-
+// Main upload screen
   return (
     <SafeAreaView style={commonStyles.container}>
       {/* HEADER */}
@@ -140,6 +155,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-// Only page-specific styles remain
-const styles = StyleSheet.create({});

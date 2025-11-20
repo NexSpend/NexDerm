@@ -101,7 +101,7 @@ function SignInForm() {
   const handleForgotPassword = () => {
     Alert.alert("Forgot Password", "Password reset feature coming soon.");
   };
-
+// `styling` for SignInForm remains in commonStyles
   return (
     <View style={commonStyles.card}>
       <View style={commonStyles.inputGroup}>
@@ -116,7 +116,7 @@ function SignInForm() {
           autoCorrect={false}
         />
       </View>
-
+{/* style for Forgot Password button remains in styles */}
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Password</Text>
         <TextInput
@@ -216,7 +216,7 @@ function SignUpForm() {
   );
 }
 
-// Only page-specific styles remain
+//Styles unique to AuthScreen
 const styles = StyleSheet.create({
   // Tile Selector (unique to AuthScreen)
   tileContainer: {
