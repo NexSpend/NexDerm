@@ -1,8 +1,8 @@
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
-// Use your local network IP when testing on Expo Go on mobile device iOS
-export const API_URL = "http://172.17.98.173:8000/api/v1";
+// Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
+export const API_URL = "http://192.168.2.207:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -17,7 +17,7 @@ export const uploadImage = async (
   try {
     const formData = new FormData();
 
-    // we gotta change this to blob if u guys wanna test this for expo web , rn it works for expo go app for iphone
+    // we gotta change this to blob if u guys wanna test this for expo web , rn it works for expo go app for iphone/android
     formData.append("file", {
       uri: imageUri,
       name: `upload_${Date.now()}.jpg`,
