@@ -1,4 +1,3 @@
-# app/api/api_v1/endpoints/predictions.py
 from fastapi import APIRouter, UploadFile, File
 from pathlib import Path
 import time
@@ -20,10 +19,8 @@ async def classify_image(
     """
     image_bytes = await file.read()
     
-    # 1. Get prediction from the model service
     label, confidence = model_service.predict_from_image_bytes(image_bytes)
     
-    # 2. Return the result directly as a dictionary
     return {"prediction": label, 
             "confidence": confidence, 
             "recommendations": "This is a demo response. Please consult a dermatologist."
