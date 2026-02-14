@@ -11,6 +11,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
+import DermatologistMapScreen from './src/pages/DermatologistMapScreen';
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
@@ -23,6 +24,7 @@ export default function App() {
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showDermatologistMap, setShowDermatologistMap] = useState(false);
 
 
   const pickImage = async () => {
@@ -105,11 +107,19 @@ export default function App() {
   if (isLoading) {
     return <LoadingScreen />;
   }
+  if (showDermatologistMap) {
+    return (
+      <DermatologistMapScreen
+        onBackToResults={() => setShowDermatologistMap(false)}
+      />
+    );
+  }
   if (showInference && image && inferenceResult) {
     return (
       <InferencePage
         imageUri={image}
         result={inferenceResult}
+        onFindDermatologists={() => setShowDermatologistMap(true)}
         onBackToUpload={handleBackToUpload}
       />
     );
