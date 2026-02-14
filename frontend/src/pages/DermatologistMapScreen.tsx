@@ -104,7 +104,7 @@ export default function DermatologistMapScreen({
   }
 
   // Build the HTML map with Google Places API
-  const googleMapsApiKey = 'AIzaSyDk2ClLScDz80wM9brgsvua48nemrcfKqI';
+  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   
   const htmlContent = `
     <!DOCTYPE html>
