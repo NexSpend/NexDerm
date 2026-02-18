@@ -2,7 +2,7 @@
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.207:8000/api/v1";
+export const API_URL = "http://192.168.2.245:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -26,10 +26,6 @@ export const uploadImage = async (
 
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Accept: "application/json",
-      },
       body: formData,
     });
 

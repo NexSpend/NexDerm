@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
@@ -23,6 +26,45 @@ export default function App() {
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const panResponderRef = useRef<PanResponder | null>(null);
+
+  // Handle back to signup with state reset
+  const handleBackToSignup = () => {
+    setIsAuthenticated(false);
+    setIsGuest(false);
+    setImage(null);
+    setInferenceResult(null);
+    setShowInference(false);
+  };
+
+  // Initialize swipe gesture recognizer
+  const createSwipeGestureHandler = () => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderRelease: (
+        evt: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
+        const swipeThreshold = 50;
+        const swipeVelocity = 0.5;
+        
+        // Detect right swipe
+        if (
+          gestureState.dx > swipeThreshold &&
+          gestureState.vx > swipeVelocity
+        ) {
+          handleBackToSignup();
+        }
+      },
+    });
+  };
+
+  // Initialize swipe responder only once
+  if (!panResponderRef.current) {
+    panResponderRef.current = createSwipeGestureHandler();
+  }
 
 
   const pickImage = async () => {
@@ -33,6 +75,23 @@ export default function App() {
     }
 // Launches expo's image picker
     const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) setImage(result.assets[0].uri);
+  };
+
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Denied", "Please allow camera access to take a photo.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
@@ -81,17 +140,17 @@ export default function App() {
     }
   };
 
+  const handleBackToUpload = () => {
+    setShowInference(false);
+    setImage(null);
+    setInferenceResult(null);
+  };
+
   const handleFindDermatologists = () => {
     Alert.alert(
       "Find Dermatologists",
       "This feature will show nearby dermatologists. Coming soon!"
     );
-  };
-
-  const handleBackToUpload = () => {
-    setShowInference(false);
-    setImage(null);
-    setInferenceResult(null);
   };
 
   if (!isAuthenticated && !isGuest) {
@@ -105,22 +164,37 @@ export default function App() {
   if (isLoading) {
     return <LoadingScreen />;
   }
+
   if (showInference && image && inferenceResult) {
     return (
       <InferencePage
         imageUri={image}
         result={inferenceResult}
+        onFindDermatologists={handleFindDermatologists}
         onBackToUpload={handleBackToUpload}
       />
     );
   }
-// Main upload screen
+
+  // Main upload screen
   return (
-    <SafeAreaView style={commonStyles.container}>
+    <SafeAreaView 
+      style={commonStyles.container}
+      {...panResponderRef.current?.panHandlers}
+    >
       {/* HEADER */}
-      <View style={commonStyles.header}>
-        <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
+      <View style={[commonStyles.header, styles.headerWithBack]}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleBackToSignup}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <View style={styles.headerTitleContainer}>
+          <Text style={commonStyles.title}>🩺 NexDerm</Text>
+          <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
+        </View>
+        <View style={styles.backButtonPlaceholder} />
       </View>
 
       {/* BODY */}
@@ -136,6 +210,12 @@ export default function App() {
         <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
           <Text style={commonStyles.buttonText}>
             {image ? "Change Image" : "Upload Image"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
+          <Text style={commonStyles.buttonText}>
+            Take a Photo
           </Text>
         </TouchableOpacity>
 
@@ -155,3 +235,34 @@ export default function App() {
     </SafeAreaView>
   );
 }
+
+// Styles for the upload screen with back button
+const styles = StyleSheet.create({
+  headerWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    position: 'relative',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingLeft: -80,
+  },
+  backButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.borderLight,
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  backButtonPlaceholder: {
+    width: 52,
+  },
+});
+
