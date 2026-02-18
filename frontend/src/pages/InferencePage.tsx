@@ -8,9 +8,7 @@ import {
   Image,
   ScrollView,
   Alert,
-  Linking,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { commonStyles, colors } from '../utils/commonStyles';
 
 interface BackendResult {
@@ -25,7 +23,7 @@ interface BackendResult {
 interface InferencePageProps {
   imageUri: string;
   result: BackendResult;
-  onFindDermatologists?: () => Promise<void>;
+  onFindDermatologists?: () => void;
   onBackToUpload: () => void;
 }
 
@@ -60,33 +58,6 @@ export default function InferencePage({
   const descriptionText =
     result.description ||
     'No detailed description is available. Please consult a dermatologist for further evaluation.';
-
-  const handleFindDermatologists = async () => {
-    try {
-      // This requests location permissions from the user
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Location access is required to find nearby dermatologists.'
-        );
-        return;
-      }
-
-      // Get's user's current location
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const { latitude, longitude } = location.coords;
-
-      // Opens Google Maps with a search for dermatologists near the user's location
-      const googleMapsUrl = `https://www.google.com/maps/search/Dermatologist near me/@${latitude},${longitude},15z`;
-      await Linking.openURL(googleMapsUrl);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open maps. Please try again.');
-    }
-  };
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -166,7 +137,7 @@ export default function InferencePage({
           {/* Buttons */}
           <TouchableOpacity
             style={[commonStyles.secondaryButton, styles.buttonFull]}
-            onPress={onFindDermatologists || handleFindDermatologists}
+            onPress={onFindDermatologists}
           >
             <Text style={commonStyles.buttonText}>
               🏥 Find Dermatologists Near You
