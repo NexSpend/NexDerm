@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -27,7 +27,7 @@ export default function App() {
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const panResponderRef = useRef<PanResponder | null>(null);
+  const panResponderRef = useRef<any>(null);
 
   // Handle back to signup with state reset
   const handleBackToSignup = () => {
@@ -62,9 +62,11 @@ export default function App() {
   };
 
   // Initialize swipe responder only once
-  if (!panResponderRef.current) {
-    panResponderRef.current = createSwipeGestureHandler();
-  }
+  useEffect(() => {
+    if (!panResponderRef.current) {
+      panResponderRef.current = createSwipeGestureHandler();
+    }
+  }, []);
 
 
   const pickImage = async () => {
@@ -146,7 +148,7 @@ export default function App() {
     setInferenceResult(null);
   };
 
-  const handleFindDermatologists = () => {
+  const handleFindDermatologists = async () => {
     Alert.alert(
       "Find Dermatologists",
       "This feature will show nearby dermatologists. Coming soon!"
@@ -180,7 +182,7 @@ export default function App() {
   return (
     <SafeAreaView 
       style={commonStyles.container}
-      {...panResponderRef.current?.panHandlers}
+      {...(panResponderRef.current?.panHandlers || {})}
     >
       {/* HEADER */}
       <View style={[commonStyles.header, styles.headerWithBack]}>
