@@ -42,10 +42,6 @@ export const uploadImage = async (
 
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Accept: "application/json",
-      },
       body: formData,
     });
 
