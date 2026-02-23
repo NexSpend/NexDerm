@@ -10,8 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
+import { supabase } from '../services/supabase';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -64,9 +66,9 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
 
             {/* Forms */}
             {authMode === 'signin' ? (
-              <SignInForm />
+              <SignInForm onAuthSuccess={onAuthSuccess}/>
             ) : (
-              <SignUpForm />
+              <SignUpForm onAuthSuccess={onAuthSuccess}/>
             )}
 
             {/* Guest Button */}
@@ -90,33 +92,45 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
   );
 }
 
-function SignInForm() {
-  const [username, setUsername] = useState('');
+function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignIn = () => {
-    Alert.alert("Login Not Active", "Login functionality coming soon. Use 'Continue as Guest' for now.");
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Missing Fields', 'Please enter your email and password.');
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      Alert.alert('Sign In Failed', error.message);
+    } else {
+      onAuthSuccess();
+    }
   };
 
   const handleForgotPassword = () => {
     Alert.alert("Forgot Password", "Password reset feature coming soon.");
   };
-// `styling` for SignInForm remains in commonStyles
+
   return (
     <View style={commonStyles.card}>
       <View style={commonStyles.inputGroup}>
-        <Text style={commonStyles.inputLabel}>Username</Text>
+        <Text style={commonStyles.inputLabel}>Email</Text>
         <TextInput
           style={commonStyles.textInput}
-          placeholder="Enter your username"
+          placeholder="Enter your email"
           placeholderTextColor={colors.textPlaceholder}
-          value={username}
-          onChangeText={setUsername}
+          value={email}
+          onChangeText={setEmail}
           autoCapitalize="none"
+          keyboardType="email-address"
           autoCorrect={false}
         />
       </View>
-{/* style for Forgot Password button remains in styles */}
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Password</Text>
         <TextInput
@@ -130,26 +144,65 @@ function SignInForm() {
           autoCorrect={false}
         />
       </View>
-
       <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
         <Text style={commonStyles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignIn}>
-        <Text style={commonStyles.buttonText}>Login</Text>
+      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignIn} disabled={loading}>
+        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Login</Text>}
       </TouchableOpacity>
     </View>
   );
 }
-
-function SignUpForm() {
+function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignUp = () => {
-    Alert.alert("Sign Up Not Active", "Registration feature coming soon. Use 'Continue as Guest' for now.");
+  const handleSignUp = async () => {
+    if (!username || !email || !password || !confirmPassword) {
+      Alert.alert('Missing Fields', 'Please fill in all fields.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      return;
+    }
+    setLoading(true);
+
+    // Step 1: Create auth account in Supabase Auth
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setLoading(false);
+      Alert.alert('Sign Up Failed', error.message);
+      return;
+    }
+    console.log('Reached Step 2 - inserting into users table');
+
+    // Step 2: Insert record into your users table
+    const { data: insertData, error: dbError } = await supabase
+      .from('users')
+      .insert([{
+        email: email,
+        hashed_password: 'managed_by_supabase_auth',
+        role: 'user',
+      }]);
+    console.log('Insert result:', insertData);
+    console.log('Insert error:', dbError);
+    setLoading(false);
+
+    if (dbError) {
+      Alert.alert('Warning', `Account created but profile save failed: ${dbError.message}`);
+    } else {
+      Alert.alert('Account Created!', 'Your account has been created successfully.',
+        [{ text: 'OK', onPress: onAuthSuccess }]
+      );
+    }
   };
 
   return (
@@ -166,7 +219,6 @@ function SignUpForm() {
           autoCorrect={false}
         />
       </View>
-
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Email</Text>
         <TextInput
@@ -180,7 +232,6 @@ function SignUpForm() {
           keyboardType="email-address"
         />
       </View>
-
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Password</Text>
         <TextInput
@@ -194,7 +245,6 @@ function SignUpForm() {
           autoCorrect={false}
         />
       </View>
-
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Confirm Password</Text>
         <TextInput
@@ -208,14 +258,12 @@ function SignUpForm() {
           autoCorrect={false}
         />
       </View>
-
-      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignUp}>
-        <Text style={commonStyles.buttonText}>Create Account</Text>
+      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignUp} disabled={loading}>
+        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Create Account</Text>}
       </TouchableOpacity>
     </View>
   );
 }
-
 //Styles unique to AuthScreen
 const styles = StyleSheet.create({
   // Tile Selector (unique to AuthScreen)
