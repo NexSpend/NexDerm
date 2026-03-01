@@ -1,8 +1,10 @@
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://172.17.187.155:8000/api/v1";
+export const API_URL = "http://10.0.0.193:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -23,7 +25,7 @@ export interface Dermatologist {
   longitude: number;
   specialties?: string;
   rating?: number;
-  distance?: number;
+  distance?: number;   
 }
 
 export const uploadImage = async (
@@ -31,17 +33,25 @@ export const uploadImage = async (
 ): Promise<PredictionResponse> => {
   try {
     const formData = new FormData();
-
-    // we gotta change this to blob if u guys wanna test this for expo web , rn it works for expo go app for iphone/android
     formData.append("file", {
       uri: imageUri,
       name: `upload_${Date.now()}.jpg`,
       type: "image/jpeg",
     } as any);
 
+    // Get JWT from AsyncStorage (if exists)
+    const token = await AsyncStorage.getItem('jwt');
+
+    // Headers: only include Authorization if token exists
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
       body: formData,
+      headers,
     });
 
     if (!response.ok) {
@@ -63,12 +73,14 @@ export const getNearbyDermatologists = async (
   limit: number = 10
 ): Promise<Dermatologist[]> => {
   try {
+    const token = await AsyncStorage.getItem('jwt'); // <-- get JWT
     const response = await fetch(
       `${API_URL}/dermatologists/nearby?latitude=${latitude}&longitude=${longitude}&radius_km=${radiusKm}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           Accept: "application/json",
+          Authorization: `Bearer ${token}`, // <-- ADD JWT HERE
         },
       }
     );
