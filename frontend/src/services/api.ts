@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://172.17.113.204:8000/api/v1";
+export const API_URL = "http://192.168.2.99:8000/api/v1";
 
 
 export interface PredictionResponse {
