@@ -2,11 +2,7 @@
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-<<<<<<< HEAD
 export const API_URL = "http://172.17.187.155:8000/api/v1";
-=======
-export const API_URL = "http://192.168.2.157:8000/api/v1";
->>>>>>> 2ce80dd (Added Ensemble Model)
 
 
 export interface PredictionResponse {
@@ -19,7 +15,6 @@ export interface PredictionResponse {
   };
 }
 
-<<<<<<< HEAD
 export interface Dermatologist {
   id: number;
   name: string;
@@ -34,8 +29,6 @@ export interface Dermatologist {
   rating?: number;
   distance?: number;
 }
-=======
->>>>>>> 2ce80dd (Added Ensemble Model)
 
 export const uploadImage = async (
   imageUri: string
