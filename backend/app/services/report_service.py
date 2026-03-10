@@ -1,4 +1,5 @@
 def generate_report(prediction, confidence):
+    confidence = float(confidence)
     return f"""
     AI Dermatology Screening Report
 

@@ -51,7 +51,7 @@ def generate_prediction_report_pdf(
     pdf.drawString(50, y, f"Detected Condition: {prediction}")
     y -= 15
 
-    pdf.drawString(50, y, f"Model Confidence: {confidence:.2f}%")
+    pdf.drawString(50, y, f"Model Confidence: {confidence * 100:.2f}%")
 
     y -= 30
 
