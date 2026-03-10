@@ -1,4 +1,6 @@
 import React from 'react';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import {
   SafeAreaView,
   View,
@@ -8,8 +10,11 @@ import {
   Image,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, colors } from '../utils/commonStyles';
+import { getLatestReport } from '../services/api';
 
 interface BackendResult {
   prediction: string;
@@ -56,6 +61,42 @@ export default function InferencePage({
   const descriptionText =
     result.description ||
     'No detailed description is available. Please consult a dermatologist for further evaluation.';
+  
+  const handleDownloadLatestReport = async () => {
+    try {
+      const data = await getLatestReport();
+
+      if (!data.download_url) {
+        Alert.alert("Error", "No report available.");
+        return;
+      }
+
+      const fileUri =
+        FileSystem.documentDirectory +
+        `nexderm-report-${Date.now()}.pdf`;
+
+      const downloadResult = await FileSystem.downloadAsync(
+        data.download_url,
+        fileUri
+      );
+
+      const canShare = await Sharing.isAvailableAsync();
+
+      if (canShare) {
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Download NexDerm Report",
+          UTI: "com.adobe.pdf",
+        });
+      } else {
+        Alert.alert("Success", "Report downloaded.");
+      }
+
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to download report.");
+    }
+  };
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -131,8 +172,19 @@ export default function InferencePage({
               )}
             </View>
           </View>
-
+       
+    
           {/* Buttons */}
+
+          <TouchableOpacity
+            style={[commonStyles.primaryButton, styles.buttonFull]}
+            onPress={handleDownloadLatestReport}
+          >
+            <Text style={commonStyles.buttonText}>
+              📄 Download Latest Report PDF
+            </Text>
+          </TouchableOpacity>
+          
           <TouchableOpacity
             style={[commonStyles.secondaryButton, styles.buttonFull]}
             onPress={onFindDermatologists}
