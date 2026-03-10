@@ -17,9 +17,7 @@ interface BackendResult {
   recommendations?: string | string[];
   description?: string;
   severity?: string;
-  // We can add other fields from backend if needed later
 }
-
 interface InferencePageProps {
   imageUri: string;
   result: BackendResult;
