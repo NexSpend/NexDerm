@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     # Basic project info
     PROJECT_NAME: str = "NexDerm"
     API_V1_STR: str = "/api/v1"
-<<<<<<< HEAD
     
     # Database
     DB_HOST: str
@@ -27,7 +26,6 @@ class Settings(BaseSettings):
     MODEL_PATH: str = "app/models/ml/artifacts/densenet_skin_best.pth"
     
     # Other settings
-=======
 
     # Database
     DATABASE_URL: str = "sqlite:///./nexderm.db"
@@ -45,7 +43,6 @@ class Settings(BaseSettings):
     ENSEMBLE_WEIGHT_RESNET: float = 0.5
 
     # Upload settings
->>>>>>> 2ce80dd (Added Ensemble Model)
     UPLOAD_FOLDER: str = "uploads"
     ALLOWED_EXTENSIONS: Set[str] = {"png", "jpg", "jpeg"}
 

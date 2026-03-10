@@ -17,16 +17,6 @@ interface BackendResult {
   recommendations?: string | string[];
   description?: string;
   severity?: string;
-  model_outputs?: {
-    densenet: {
-      prediction: string;
-      confidence: number;
-    };
-    resnet: {
-      prediction: string;
-      confidence: number;
-    };
-  };
 }
 interface InferencePageProps {
   imageUri: string;
@@ -105,32 +95,6 @@ export default function InferencePage({
                 {confidencePercent.toFixed(1)}%
               </Text>
             </View>
-
-            {/* Model Outputs */}
-            {result.model_outputs && (
-              <View style={styles.section}>
-                <Text style={commonStyles.sectionLabel}>Model Outputs</Text>
-
-                <Text style={styles.recommendationText}>
-                  DenseNet: {result.model_outputs.densenet.prediction} (
-                  {(result.model_outputs.densenet.confidence <= 1
-                    ? result.model_outputs.densenet.confidence * 100
-                    : result.model_outputs.densenet.confidence
-                  ).toFixed(1)}
-                  %)
-                </Text>
-
-                <Text style={styles.recommendationText}>
-                  ResNet: {result.model_outputs.resnet.prediction} (
-                  {(result.model_outputs.resnet.confidence <= 1
-                    ? result.model_outputs.resnet.confidence * 100
-                    : result.model_outputs.resnet.confidence
-                  ).toFixed(1)}
-                  %)
-                </Text>
-              </View>
-            )}
-
 
             {/* Severity */}
             <View style={styles.section}>
