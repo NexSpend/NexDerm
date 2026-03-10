@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import AccountButton from './AccountButton';
+import Sidebar from './Sidebar';
 import { commonStyles, colors } from '../utils/commonStyles';
 
 interface BackendResult {
@@ -25,6 +27,8 @@ interface InferencePageProps {
   result: BackendResult;
   onFindDermatologists?: () => void;
   onBackToUpload: () => void;
+  userEmail?: string;
+  onProfile?: () => void;
 }
 
 export default function InferencePage({
@@ -32,7 +36,15 @@ export default function InferencePage({
   result,
   onFindDermatologists,
   onBackToUpload,
+  userEmail = "user@example.com",
+  onProfile,
 }: InferencePageProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    setSidebarOpen(false);
+    onBackToUpload();
+  };
   // Normalize confidence to 0–100
   const confidencePercent =
     result.confidence <= 1 ? result.confidence * 100 : result.confidence;
@@ -60,16 +72,31 @@ export default function InferencePage({
     'No detailed description is available. Please consult a dermatologist for further evaluation.';
 
   return (
-    <SafeAreaView style={commonStyles.container}>
-      {/* HEADER */}
-      <View style={commonStyles.header}>
-        <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>Detection Results</Text>
-      </View>
+    <View style={commonStyles.container}>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        userEmail={userEmail}
+        onLogout={handleLogout}
+        onProfile={onProfile}
+      />
+      <SafeAreaView style={commonStyles.container}>
+        {/* HEADER */}
+        <View style={[commonStyles.header, styles.headerWithAccount]}>
+          <AccountButton
+            onPress={() => setSidebarOpen(true)}
+            userEmail={userEmail}
+          />
+          <View style={styles.headerTitleContainer}>
+            <Text style={commonStyles.title}>🩺 NexDerm</Text>
+            <Text style={commonStyles.subtitle}>Detection Results</Text>
+          </View>
+          <View style={styles.headerPlaceholder} />
+        </View>
 
-      {/* BODY */}
-      <ScrollView contentContainerStyle={commonStyles.scrollContent}>
-        <View style={[commonStyles.body, styles.bodyPadding]}>
+        {/* BODY */}
+        <ScrollView contentContainerStyle={commonStyles.scrollContent}>
+          <View style={[commonStyles.body, styles.bodyPadding]}>
           {/* Image Preview */}
           <View style={commonStyles.imageBox}>
             <Image source={{ uri: imageUri }} style={commonStyles.previewImage} />
@@ -162,12 +189,26 @@ export default function InferencePage({
           professional for diagnosis.
         </Text>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 // Page specific for only InferencePage styles
 const styles = StyleSheet.create({
+  headerWithAccount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerPlaceholder: {
+    width: 52,
+  },
   bodyPadding: {
     paddingVertical: 20,
   },

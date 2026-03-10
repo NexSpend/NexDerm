@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
+import AccountButton from './AccountButton';
+import Sidebar from './Sidebar';
 import { commonStyles, colors } from '../utils/commonStyles';
 
 interface Dermatologist {
@@ -25,10 +27,14 @@ interface Dermatologist {
 
 interface DermatologistMapScreenProps {
   onBackToResults: () => void;
+  userEmail?: string;
+  onProfile?: () => void;
 }
 
 export default function DermatologistMapScreen({
   onBackToResults,
+  userEmail = "user@example.com",
+  onProfile,
 }: DermatologistMapScreenProps) {
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -36,6 +42,12 @@ export default function DermatologistMapScreen({
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [topDermatologists, setTopDermatologists] = useState<Dermatologist[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    setSidebarOpen(false);
+    onBackToResults();
+  };
 
   const openMapsNavigation = (latitude: number, longitude: number, name: string) => {
     const url = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
@@ -78,28 +90,68 @@ export default function DermatologistMapScreen({
 
   if (loading) {
     return (
-      <SafeAreaView style={commonStyles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Finding nearby dermatologists...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={commonStyles.container}>
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          userEmail={userEmail}
+          onLogout={handleLogout}
+          onProfile={onProfile}
+        />
+        <SafeAreaView style={commonStyles.container}>
+          <View style={[commonStyles.header, styles.headerWithAccount]}>
+            <AccountButton
+              onPress={() => setSidebarOpen(true)}
+              userEmail={userEmail}
+            />
+            <View style={styles.headerTitleContainer}>
+              <Text style={commonStyles.title}>🩺 NexDerm</Text>
+              <Text style={commonStyles.subtitle}>Nearby Dermatologists</Text>
+            </View>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Finding nearby dermatologists...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   if (!userLocation) {
     return (
-      <SafeAreaView style={commonStyles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Unable to get your location</Text>
-          <TouchableOpacity
-            style={commonStyles.primaryButton}
-            onPress={onBackToResults}
-          >
-            <Text style={commonStyles.buttonText}>Back to Results</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={commonStyles.container}>
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          userEmail={userEmail}
+          onLogout={handleLogout}
+          onProfile={onProfile}
+        />
+        <SafeAreaView style={commonStyles.container}>
+          <View style={[commonStyles.header, styles.headerWithAccount]}>
+            <AccountButton
+              onPress={() => setSidebarOpen(true)}
+              userEmail={userEmail}
+            />
+            <View style={styles.headerTitleContainer}>
+              <Text style={commonStyles.title}>🩺 NexDerm</Text>
+              <Text style={commonStyles.subtitle}>Nearby Dermatologists</Text>
+            </View>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Unable to get your location</Text>
+            <TouchableOpacity
+              style={commonStyles.primaryButton}
+              onPress={onBackToResults}
+            >
+              <Text style={commonStyles.buttonText}>Back to Results</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
@@ -267,71 +319,100 @@ export default function DermatologistMapScreen({
   `;
 
   return (
-    <SafeAreaView style={commonStyles.container}>
-      {/* HEADER */}
-      <View style={commonStyles.header}>
-        <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>Nearby Dermatologists</Text>
-      </View>
-
-      {/* MAP */}
-      <WebView
-        source={{ html: htmlContent }}
-        style={styles.map}
-        onMessage={(event) => {
-          try {
-            const message = JSON.parse(event.nativeEvent.data);
-            if (message.type === 'DERMATOLOGISTS') {
-              setTopDermatologists(message.data);
-            }
-          } catch (error) {
-            console.error('Error parsing message:', error);
-          }
-        }}
+    <View style={commonStyles.container}>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        userEmail={userEmail}
+        onLogout={handleLogout}
+        onProfile={onProfile}
       />
+      <SafeAreaView style={commonStyles.container}>
+        {/* HEADER */}
+        <View style={[commonStyles.header, styles.headerWithAccount]}>
+          <AccountButton
+            onPress={() => setSidebarOpen(true)}
+            userEmail={userEmail}
+          />
+          <View style={styles.headerTitleContainer}>
+            <Text style={commonStyles.title}>🩺 NexDerm</Text>
+            <Text style={commonStyles.subtitle}>Nearby Dermatologists</Text>
+          </View>
+          <View style={styles.headerPlaceholder} />
+        </View>
 
-      {/* TOP 3 DERMATOLOGISTS */}
-      <ScrollView style={styles.listContainer}>
-        <Text style={styles.listTitle}>Top 3 Closest Dermatologists</Text>
-        {topDermatologists.length > 0 ? (
-          topDermatologists.map((derm, index) => (
-            <View key={index} style={styles.dermCard}>
-              <Text style={styles.dermIndex}>{index + 1}</Text>
-              <View style={styles.dermInfo}>
-                <Text style={styles.dermName}>{derm.name}</Text>
-                <Text style={styles.dermAddress}>{derm.address}</Text>
-                <View style={styles.dermFooter}>
-                  <View style={styles.statsContainer}>
-                    <Text style={styles.dermDistance}>📍 {derm.distance} km</Text>
-                    <Text style={styles.dermRating}>⭐ {derm.rating.toFixed(1)}</Text>
+        {/* MAP */}
+        <WebView
+          source={{ html: htmlContent }}
+          style={styles.map}
+          onMessage={(event) => {
+            try {
+              const message = JSON.parse(event.nativeEvent.data);
+              if (message.type === 'DERMATOLOGISTS') {
+                setTopDermatologists(message.data);
+              }
+            } catch (error) {
+              console.error('Error parsing message:', error);
+            }
+          }}
+        />
+
+        {/* TOP 3 DERMATOLOGISTS */}
+        <ScrollView style={styles.listContainer}>
+          <Text style={styles.listTitle}>Top 3 Closest Dermatologists</Text>
+          {topDermatologists.length > 0 ? (
+            topDermatologists.map((derm, index) => (
+              <View key={index} style={styles.dermCard}>
+                <Text style={styles.dermIndex}>{index + 1}</Text>
+                <View style={styles.dermInfo}>
+                  <Text style={styles.dermName}>{derm.name}</Text>
+                  <Text style={styles.dermAddress}>{derm.address}</Text>
+                  <View style={styles.dermFooter}>
+                    <View style={styles.statsContainer}>
+                      <Text style={styles.dermDistance}>📍 {derm.distance} km</Text>
+                      <Text style={styles.dermRating}>⭐ {derm.rating.toFixed(1)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.navButton}
+                      onPress={() => openMapsNavigation(derm.lat || 0, derm.lng || 0, derm.name)}
+                    >
+                      <Text style={styles.navButtonText}>→ Navigate</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.navButton}
-                    onPress={() => openMapsNavigation(derm.lat || 0, derm.lng || 0, derm.name)}
-                  >
-                    <Text style={styles.navButtonText}>→ Navigate</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noResultsText}>Loading dermatologists...</Text>
-        )}
-      </ScrollView>
+            ))
+          ) : (
+            <Text style={styles.noResultsText}>Loading dermatologists...</Text>
+          )}
+        </ScrollView>
 
-      {/* FOOTER BUTTON */}
-      <TouchableOpacity
-        style={[commonStyles.primaryButton, styles.backButton]}
-        onPress={onBackToResults}
-      >
-        <Text style={commonStyles.buttonText}>← Back to Results</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+        {/* FOOTER BUTTON */}
+        <TouchableOpacity
+          style={[commonStyles.primaryButton, styles.backButton]}
+          onPress={onBackToResults}
+        >
+          <Text style={commonStyles.buttonText}>← Back to Results</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  headerWithAccount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerPlaceholder: {
+    width: 52,
+  },
   map: {
     width: '100%',
     height: 350,

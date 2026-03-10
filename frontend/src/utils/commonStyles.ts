@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 export const colors = {
   primary: "#004aad",
+  primaryLight: "#e0e7ff",
   secondary: "#007b83",
   background: "#f7f9fc",
   white: "#ffffff",
@@ -10,6 +11,7 @@ export const colors = {
   textSecondary: "#4b5563",
   textTertiary: "#6b7280",
   textPlaceholder: "#9ca3af",
+  textDark: "#1f2937",
   border: "#cbd5e1",
   borderLight: "#e5e7eb",
   inputBg: "#f9fafb",
@@ -17,6 +19,9 @@ export const colors = {
   errorBg: "#fef2f2",
   errorBorder: "#fecaca",
   errorText: "#dc2626",
+  error: "#dc2626",
+  errorLight: "#fee2e2",
+  success: "#10b981",
   secondaryButtonBg: "#f3f4f6",
   secondaryButtonBorder: "#d1d5db",
 };

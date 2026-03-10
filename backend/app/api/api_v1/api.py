@@ -13,6 +13,10 @@ from app.api.api_v1.endpoints.model_endpoints import (
     predictions
 )
 
+from app.api.api_v1.endpoints import (
+    users
+)
+
 api_router.include_router(ping.router, prefix="/ping", tags=["ping"])
-# api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(predictions.router, prefix="/predictions", tags=["predictions"])

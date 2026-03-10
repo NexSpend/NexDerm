@@ -2,7 +2,7 @@
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://172.17.187.155:8000/api/v1";
+export const API_URL = "http://192.168.2.245:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -86,4 +86,106 @@ export const getNearbyDermatologists = async (
   }
 };
 
+// User Profile API functions
+export interface UserProfile {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role: string;
+  profile_image_url?: string;
+}
+
+export const getUserProfile = async (userId: number): Promise<UserProfile> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fetch user profile (${response.status}): ${text}`);
+    }
+
+    return (await response.json()) as UserProfile;
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (
+  userId: number,
+  updates: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    profile_image_url?: string;
+  }
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to update user profile (${response.status}): ${text}`);
+    }
+
+    return (await response.json()) as UserProfile;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
+};
+
+export const changePassword = async (
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      const errorStatus = response.status;
+      
+      if (errorStatus === 401) {
+        throw new Error("Unauthorized: Current password is incorrect");
+      } else if (errorStatus === 400) {
+        throw new Error(`Validation error: ${text}`);
+      } else {
+        throw new Error(`Failed to change password (${errorStatus}): ${text}`);
+      }
+    }
+
+    return (await response.json()) as { message: string };
+  } catch (error) {
+    console.error("Error changing password:", error);
+    throw error;
+  }
+};
 

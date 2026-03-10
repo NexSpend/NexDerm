@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
+import { useUser } from '../context/UserContext';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -96,6 +97,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { setUser } = useUser();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -103,12 +105,47 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      Alert.alert('Sign In Failed', error.message);
-    } else {
-      onAuthSuccess();
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        Alert.alert('Sign In Failed', error.message);
+      } else {
+        // Try to fetch user profile
+        try {
+          const response = await fetch(`http://192.168.2.245:8000/api/v1/users/by-email/${encodeURIComponent(email)}`);
+          if (response.ok) {
+            const userProfile = await response.json();
+            setUser(userProfile);
+            console.log('User profile loaded:', userProfile);
+          } else if (response.status === 404) {
+            // User doesn't exist in backend, create them
+            console.log('User not in backend, creating...');
+            try {
+              const createResponse = await fetch('http://192.168.2.245:8000/api/v1/users/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: email,
+                  hashed_password: 'managed_by_supabase_auth',
+                  role: 'patient',
+                }),
+              });
+              if (createResponse.ok) {
+                const newUser = await createResponse.json();
+                setUser(newUser);
+                console.log('User created in backend:', newUser);
+              }
+            } catch (createError) {
+              console.warn('Could not create user in backend:', createError);
+            }
+          }
+        } catch (profileError) {
+          console.warn('Error checking user profile:', profileError);
+        }
+        onAuthSuccess();
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,6 +196,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { setUser } = useUser();
 
   const handleSignUp = async () => {
     if (!username || !email || !password || !confirmPassword) {
@@ -175,33 +213,45 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     }
     setLoading(true);
 
-    // Step 1: Create auth account in Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setLoading(false);
-      Alert.alert('Sign Up Failed', error.message);
-      return;
-    }
-    console.log('Reached Step 2 - inserting into users table');
+    try {
+      // Step 1: Create auth account in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        Alert.alert('Sign Up Failed', error.message);
+        return;
+      }
 
-    // Step 2: Insert record into your users table
-    const { data: insertData, error: dbError } = await supabase
-      .from('users')
-      .insert([{
-        email: email,
-        hashed_password: 'managed_by_supabase_auth',
-        role: 'user',
-      }]);
-    console.log('Insert result:', insertData);
-    console.log('Insert error:', dbError);
-    setLoading(false);
+      // Step 2: Create user in backend PostgreSQL database
+      try {
+        const response = await fetch('http://192.168.2.245:8000/api/v1/users/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            hashed_password: 'managed_by_supabase_auth',
+            first_name: username,
+            role: 'patient',
+          }),
+        });
 
-    if (dbError) {
-      Alert.alert('Warning', `Account created but profile save failed: ${dbError.message}`);
-    } else {
+        if (response.ok) {
+          const userProfile = await response.json();
+          setUser(userProfile);
+          console.log('User created in backend:', userProfile);
+        } else {
+          console.warn('Could not create user in backend');
+        }
+      } catch (backendError) {
+        console.error('Error creating user in backend:', backendError);
+      }
+
       Alert.alert('Account Created!', 'Your account has been created successfully.',
         [{ text: 'OK', onPress: onAuthSuccess }]
       );
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -15,18 +15,29 @@ import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
 import DermatologistMapScreen from './src/pages/DermatologistMapScreen';
+import ProfilePage from './src/pages/ProfilePage';
+import EditInformationPage from './src/pages/EditInformationPage';
+import ChangePasswordPage from './src/pages/ChangePasswordPage';
+import AccountButton from './src/pages/AccountButton';
+import Sidebar from './src/pages/Sidebar';
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
+import { UserProvider } from './src/context/UserContext';
 
 // All the imports
-export default function App() {
+function AppContent() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("user@example.com");
+  const [showProfile, setShowProfile] = useState(false);
+  const [showEditInformation, setShowEditInformation] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   
   const panResponderRef = useRef<any>(null);
 
@@ -37,6 +48,28 @@ export default function App() {
     setImage(null);
     setInferenceResult(null);
     setShowInference(false);
+    setSidebarOpen(false);
+    setShowProfile(false);
+    setShowEditInformation(false);
+    setShowChangePassword(false);
+  };
+
+  const handleLogout = () => {
+    handleBackToSignup();
+  };
+
+  const handleBackFromProfile = () => {
+    setShowProfile(false);
+  };
+
+  const handleBackFromEditInformation = () => {
+    setShowEditInformation(false);
+    setShowProfile(true);
+  };
+
+  const handleBackFromChangePassword = () => {
+    setShowChangePassword(false);
+    setShowProfile(true);
   };
 
   // Initialize swipe gesture recognizer
@@ -168,10 +201,38 @@ export default function App() {
   if (isLoading) {
     return <LoadingScreen />;
   }
+  if (showEditInformation) {
+    return (
+      <EditInformationPage
+        userEmail={userEmail}
+        onBackToProfile={handleBackFromEditInformation}
+      />
+    );
+  }
+  if (showChangePassword) {
+    return (
+      <ChangePasswordPage
+        userEmail={userEmail}
+        onBackToProfile={handleBackFromChangePassword}
+      />
+    );
+  }
+  if (showProfile) {
+    return (
+      <ProfilePage
+        userEmail={userEmail}
+        onBackToHome={handleBackFromProfile}
+        onEditInformation={() => setShowEditInformation(true)}
+        onChangePassword={() => setShowChangePassword(true)}
+      />
+    );
+  }
   if (showDermatologistMap) {
     return (
       <DermatologistMapScreen
         onBackToResults={() => setShowDermatologistMap(false)}
+        userEmail={userEmail}
+        onProfile={() => setShowProfile(true)}
       />
     );
   }
@@ -182,71 +243,89 @@ export default function App() {
         result={inferenceResult}
         onFindDermatologists={() => setShowDermatologistMap(true)}
         onBackToUpload={handleBackToUpload}
+        userEmail={userEmail}
+        onProfile={() => setShowProfile(true)}
       />
     );
   }
 
   // Main upload screen
   return (
-    <SafeAreaView 
-      style={commonStyles.container}
-      {...(panResponderRef.current?.panHandlers || {})}
-    >
-      {/* HEADER */}
-      <View style={[commonStyles.header, styles.headerWithBack]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackToSignup}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={commonStyles.title}>🩺 NexDerm</Text>
-          <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
+    <View style={commonStyles.container}>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        userEmail={userEmail}
+        onLogout={handleLogout}
+        onProfile={() => setShowProfile(true)}
+      />
+      <SafeAreaView 
+        style={commonStyles.container}
+        {...(panResponderRef.current?.panHandlers || {})}
+      >
+        {/* HEADER */}
+        <View style={[commonStyles.header, styles.headerWithBack]}>
+          <AccountButton
+            onPress={() => setSidebarOpen(true)}
+            userEmail={userEmail}
+          />
+          <View style={styles.headerTitleContainer}>
+            <Text style={commonStyles.title}>🩺 NexDerm</Text>
+            <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
+          </View>
+          <View style={styles.backButtonPlaceholder} />
         </View>
-        <View style={styles.backButtonPlaceholder} />
-      </View>
 
-      {/* BODY */}
-      <View style={commonStyles.body}>
-        <View style={[commonStyles.imageBox, commonStyles.imageBoxDashed]}>
-          {image ? (
-            <Image source={{ uri: image }} style={commonStyles.previewImage} />
-          ) : (
-            <Text style={commonStyles.previewPlaceholder}>Preview</Text>
+        {/* BODY */}
+        <View style={commonStyles.body}>
+          <View style={[commonStyles.imageBox, commonStyles.imageBoxDashed]}>
+            {image ? (
+              <Image source={{ uri: image }} style={commonStyles.previewImage} />
+            ) : (
+              <Text style={commonStyles.previewPlaceholder}>Preview</Text>
+            )}
+          </View>
+
+          <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
+            <Text style={commonStyles.buttonText}>
+              {image ? "Change Image" : "Upload Image"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
+            <Text style={commonStyles.buttonText}>
+              Take a Photo
+            </Text>
+          </TouchableOpacity>
+
+          {image && (
+            <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
+              <Text style={commonStyles.buttonText}>Start Detection</Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
-          <Text style={commonStyles.buttonText}>
-            {image ? "Change Image" : "Upload Image"}
+        {/* FOOTER */}
+        <View style={commonStyles.footer}>
+          <Text style={commonStyles.disclaimer}>
+            ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
-          <Text style={commonStyles.buttonText}>
-            Take a Photo
-          </Text>
-        </TouchableOpacity>
-
-        {image && (
-          <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
-            <Text style={commonStyles.buttonText}>Start Detection</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* FOOTER */}
-      <View style={commonStyles.footer}>
-        <Text style={commonStyles.disclaimer}>
-          ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
-        </Text>
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
-// Styles for the upload screen with back button
+// Main App wrapper with UserProvider
+export default function App() {
+  return (
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
+  );
+}
+
+// Styles for the upload screen with account button
 const styles = StyleSheet.create({
   headerWithBack: {
     flexDirection: 'row',
@@ -259,17 +338,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingLeft: -80,
-  },
-  backButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.borderLight,
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
   },
   backButtonPlaceholder: {
     width: 52,
