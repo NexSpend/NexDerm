@@ -17,4 +17,5 @@ psycopg2-binary>=2.9.11
 supabase
 torch
 torchvision
-
+boto3
+reportlab

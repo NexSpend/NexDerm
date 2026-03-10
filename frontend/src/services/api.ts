@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.1.9:8000/api/v1";
+export const API_URL = "http://172.17.113.204:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -102,4 +102,35 @@ export const getNearbyDermatologists = async (
   }
 };
 
+export interface LatestReportResponse {
+  report_id: string;
+  prediction: string;
+  confidence: number;
+  file_name: string;
+  download_url: string;
+  created_at: string;
+}
 
+export const getLatestReport = async (): Promise<LatestReportResponse> => {
+  try {
+    const token = await AsyncStorage.getItem('jwt');
+
+    const response = await fetch(`${API_URL}/reports/latest`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fetch latest report (${response.status}): ${text}`);
+    }
+
+    return (await response.json()) as LatestReportResponse;
+  } catch (error) {
+    console.error('Error fetching latest report:', error);
+    throw error;
+  }
+};
