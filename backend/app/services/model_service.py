@@ -46,8 +46,8 @@ class ModelService:
         if self.classifier is None:
             raise RuntimeError("Model is not loaded.")
 
-        return self.classifier.predict(image)
-
+        result = self.classifier.predict(image)
+        return result["prediction"], result["confidence"]
 
 # Global instance reused across API routes
 model_service = ModelService()

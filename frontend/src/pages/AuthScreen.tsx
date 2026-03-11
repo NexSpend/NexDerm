@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -108,6 +109,15 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     if (error) {
       Alert.alert('Sign In Failed', error.message);
     } else {
+      const token = data.session?.access_token; // <-- get JWT
+      if (!token) {
+        Alert.alert('Error', 'No access token found.');
+        return;
+      }
+
+      // Save JWT for backend calls
+      await AsyncStorage.setItem('jwt', token);
+
       onAuthSuccess();
     }
   };
@@ -184,10 +194,13 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     }
     console.log('Reached Step 2 - inserting into users table');
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUserId = session.user.id;  // UUID from Supabase Auth
     // Step 2: Insert record into your users table
     const { data: insertData, error: dbError } = await supabase
-      .from('users')
+      .from('newUsers')
       .insert([{
+        id: supabaseUserId,
         email: email,
         hashed_password: 'managed_by_supabase_auth',
         role: 'user',

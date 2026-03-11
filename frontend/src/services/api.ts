@@ -1,8 +1,10 @@
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.1.9:8000/api/v1";
+export const API_URL = "http://192.168.2.99:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -27,7 +29,7 @@ export interface Dermatologist {
   longitude: number;
   specialties?: string;
   rating?: number;
-  distance?: number;
+  distance?: number;   
 }
 
 export const uploadImage = async (
@@ -35,17 +37,25 @@ export const uploadImage = async (
 ): Promise<PredictionResponse> => {
   try {
     const formData = new FormData();
-
-    // we gotta change this to blob if u guys wanna test this for expo web , rn it works for expo go app for iphone/android
     formData.append("file", {
       uri: imageUri,
       name: `upload_${Date.now()}.jpg`,
       type: "image/jpeg",
     } as any);
 
+    // Get JWT from AsyncStorage (if exists)
+    const token = await AsyncStorage.getItem('jwt');
+
+    // Headers: only include Authorization if token exists
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
       body: formData,
+      headers,
     });
 
     if (!response.ok) {
@@ -67,12 +77,14 @@ export const getNearbyDermatologists = async (
   limit: number = 10
 ): Promise<Dermatologist[]> => {
   try {
+    const token = await AsyncStorage.getItem('jwt'); // <-- get JWT
     const response = await fetch(
       `${API_URL}/dermatologists/nearby?latitude=${latitude}&longitude=${longitude}&radius_km=${radiusKm}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           Accept: "application/json",
+          Authorization: `Bearer ${token}`, // <-- ADD JWT HERE
         },
       }
     );
@@ -90,4 +102,35 @@ export const getNearbyDermatologists = async (
   }
 };
 
+export interface LatestReportResponse {
+  report_id: string;
+  prediction: string;
+  confidence: number;
+  file_name: string;
+  download_url: string;
+  created_at: string;
+}
 
+export const getLatestReport = async (): Promise<LatestReportResponse> => {
+  try {
+    const token = await AsyncStorage.getItem('jwt');
+
+    const response = await fetch(`${API_URL}/reports/latest`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fetch latest report (${response.status}): ${text}`);
+    }
+
+    return (await response.json()) as LatestReportResponse;
+  } catch (error) {
+    console.error('Error fetching latest report:', error);
+    throw error;
+  }
+};
