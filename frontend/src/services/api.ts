@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.99:8000/api/v1";
+export const API_URL = "http://192.168.2.108:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -131,6 +131,55 @@ export const getLatestReport = async (): Promise<LatestReportResponse> => {
     return (await response.json()) as LatestReportResponse;
   } catch (error) {
     console.error('Error fetching latest report:', error);
+    throw error;
+  }
+};
+
+export const getUserInfo = async () => {
+  try {
+    const token = await AsyncStorage.getItem('jwt');
+
+    const response = await fetch(`${API_URL}/user/info`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fetch user info (${response.status}): ${text}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    throw error;
+  }
+};
+
+export const getMedicalHistory = async () => {
+  try {
+    const token = await AsyncStorage.getItem('jwt');
+
+    const response = await fetch(`${API_URL}/user/medical-history`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fetch medical history (${response.status}): ${text}`);
+    }
+
+    const data = await response.json();
+    return data.history || [];
+  } catch (error) {
+    console.error('Error fetching medical history:', error);
     throw error;
   }
 };

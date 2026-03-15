@@ -1,19 +1,32 @@
 import React from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView } from "react-native";
 import { colors } from "../utils/commonStyles";
+import AccountButton from "./AccountButton";
 
-export default function LoadingScreen() {
+interface LoadingScreenProps {
+  onAccountPress?: () => void;
+  userName?: string;
+}
+
+export default function LoadingScreen({ onAccountPress, userName = 'User' }: LoadingScreenProps) {
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={colors.primary} />
-{/* Text styles for LoadingScreen */}
-      <Text style={styles.text}>Analyzing your Image...</Text>
-      <Text style={styles.Subtext}>This may take a few moments</Text>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        {/* Text styles for LoadingScreen */}
+        <Text style={styles.text}>Analyzing your Image...</Text>
+        <Text style={styles.Subtext}>This may take a few moments</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 // Only styles unique to LoadingScreen
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "white",
+  },
   container: {
     flex: 1,
     backgroundColor: "white",

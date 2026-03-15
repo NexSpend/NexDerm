@@ -15,6 +15,11 @@ import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
 import DermatologistMapScreen from './src/pages/DermatologistMapScreen';
+import AccountDrawer from './src/pages/AccountDrawer';
+import ProfilePage from './src/pages/ProfilePage';
+import HistoryPage from './src/pages/HistoryPage';
+import ChangePasswordPage from './src/pages/ChangePasswordPage';
+import AccountButton from './src/pages/AccountButton';
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
@@ -27,6 +32,11 @@ export default function App() {
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [userName, setUserName] = useState('User');
   
   const panResponderRef = useRef<any>(null);
 
@@ -165,114 +175,189 @@ export default function App() {
       />
     );
   }
+  if (showProfile) {
+    return (
+      <ProfilePage
+        onBackToAccount={() => {
+          setShowProfile(false);
+          setShowAccount(true);
+        }}
+        onShowChangePassword={() => {
+          setShowProfile(false);
+          setShowChangePassword(true);
+        }}
+      />
+    );
+  }
+  if (showChangePassword) {
+    return (
+      <ChangePasswordPage
+        onBackToProfile={() => {
+          setShowChangePassword(false);
+          setShowProfile(true);
+        }}
+      />
+    );
+  }
+  if (showHistory) {
+    return (
+      <HistoryPage
+        onBackToAccount={() => {
+          setShowHistory(false);
+          setShowAccount(true);
+        }}
+      />
+    );
+  }
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <>
+        <LoadingScreen onAccountPress={() => setShowAccount(true)} userName={userName} />
+        <AccountDrawer
+          isVisible={showAccount}
+          onClose={() => setShowAccount(false)}
+          onSignOut={handleBackToSignup}
+          onShowProfile={() => {
+            setShowAccount(false);
+            setShowProfile(true);
+          }}
+          onShowHistory={() => {
+            setShowAccount(false);
+            setShowHistory(true);
+          }}
+        />
+      </>
+    );
   }
   if (showDermatologistMap) {
     return (
-      <DermatologistMapScreen
-        onBackToResults={() => setShowDermatologistMap(false)}
-      />
+      <>
+        <DermatologistMapScreen
+          onBackToResults={() => setShowDermatologistMap(false)}
+          onAccountPress={() => setShowAccount(true)}
+        />
+        <AccountDrawer
+          isVisible={showAccount}
+          onClose={() => setShowAccount(false)}
+          onSignOut={handleBackToSignup}
+          onShowProfile={() => {
+            setShowAccount(false);
+            setShowProfile(true);
+          }}
+          onShowHistory={() => {
+            setShowAccount(false);
+            setShowHistory(true);
+          }}
+        />
+      </>
     );
   }
   if (showInference && image && inferenceResult) {
     return (
-      <InferencePage
-        imageUri={image}
-        result={inferenceResult}
-        onFindDermatologists={() => setShowDermatologistMap(true)}
-        onBackToUpload={handleBackToUpload}
-      />
+      <>
+        <InferencePage
+          imageUri={image}
+          result={inferenceResult}
+          onShowProfile={() => {
+            setShowAccount(false);
+            setShowProfile(true);
+          }}
+          onShowHistory={() => {
+            setShowAccount(false);
+            setShowHistory(true);
+          }}
+          onFindDermatologists={() => setShowDermatologistMap(true)}
+          onBackToUpload={handleBackToUpload}
+          onAccountPress={() => setShowAccount(true)}
+        />
+        <AccountDrawer
+          isVisible={showAccount}
+          onClose={() => setShowAccount(false)}
+          onSignOut={handleBackToSignup}
+          onShowProfile={() => {
+            setShowAccount(false);
+            setShowProfile(true);
+          }}
+          onShowHistory={() => {
+            setShowAccount(false);
+            setShowHistory(true);
+          }}
+        />
+      </>
     );
   }
 
   // Main upload screen
   return (
-    <SafeAreaView 
-      style={commonStyles.container}
-      {...(panResponderRef.current?.panHandlers || {})}
-    >
-      {/* HEADER */}
-      <View style={[commonStyles.header, styles.headerWithBack]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackToSignup}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
+    <>
+      <SafeAreaView 
+        style={commonStyles.container}
+        {...(panResponderRef.current?.panHandlers || {})}
+      >
+        {/* Account Button */}
+        <AccountButton onPress={() => setShowAccount(true)} userName={userName} />
+        
+        {/* HEADER */}
+        <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
         </View>
-        <View style={styles.backButtonPlaceholder} />
-      </View>
 
-      {/* BODY */}
-      <View style={commonStyles.body}>
-        <View style={[commonStyles.imageBox, commonStyles.imageBoxDashed]}>
-          {image ? (
-            <Image source={{ uri: image }} style={commonStyles.previewImage} />
-          ) : (
-            <Text style={commonStyles.previewPlaceholder}>Preview</Text>
+        {/* BODY */}
+        <View style={commonStyles.body}>
+          <View style={[commonStyles.imageBox, commonStyles.imageBoxDashed]}>
+            {image ? (
+              <Image source={{ uri: image }} style={commonStyles.previewImage} />
+            ) : (
+              <Text style={commonStyles.previewPlaceholder}>Preview</Text>
+            )}
+          </View>
+
+          <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
+            <Text style={commonStyles.buttonText}>
+              {image ? "Change Image" : "Upload Image"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
+            <Text style={commonStyles.buttonText}>
+              Take a Photo
+            </Text>
+          </TouchableOpacity>
+
+          {image && (
+            <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
+              <Text style={commonStyles.buttonText}>Start Detection</Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
-          <Text style={commonStyles.buttonText}>
-            {image ? "Change Image" : "Upload Image"}
+        {/* FOOTER */}
+        <View style={commonStyles.footer}>
+          <Text style={commonStyles.disclaimer}>
+            ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
-          <Text style={commonStyles.buttonText}>
-            Take a Photo
-          </Text>
-        </TouchableOpacity>
-
-        {image && (
-          <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
-            <Text style={commonStyles.buttonText}>Start Detection</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* FOOTER */}
-      <View style={commonStyles.footer}>
-        <Text style={commonStyles.disclaimer}>
-          ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
-        </Text>
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+      
+      {/* Account Drawer Overlay */}
+      <AccountDrawer
+        isVisible={showAccount}
+        onClose={() => setShowAccount(false)}
+        onSignOut={handleBackToSignup}
+        onShowProfile={() => {
+          setShowAccount(false);
+          setShowProfile(true);
+        }}
+        onShowHistory={() => {
+          setShowAccount(false);
+          setShowHistory(true);
+        }}
+      />
+    </>
   );
 }
 
-// Styles for the upload screen with back button
-const styles = StyleSheet.create({
-  headerWithBack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    position: 'relative',
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingLeft: -80,
-  },
-  backButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.borderLight,
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  backButtonPlaceholder: {
-    width: 52,
-  },
-});
+// Styles for the upload screen
+const styles = StyleSheet.create({});
 

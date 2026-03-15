@@ -15,6 +15,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { getLatestReport } from '../services/api';
+import AccountButton from './AccountButton';
 
 interface BackendResult {
   prediction: string;
@@ -28,6 +29,8 @@ interface InferencePageProps {
   result: BackendResult;
   onFindDermatologists?: () => void;
   onBackToUpload: () => void;
+  onAccountPress?: () => void;
+  userName?: string;
 }
 
 export default function InferencePage({
@@ -35,6 +38,8 @@ export default function InferencePage({
   result,
   onFindDermatologists,
   onBackToUpload,
+  onAccountPress,
+  userName = 'User',
 }: InferencePageProps) {
   // Normalize confidence to 0–100
   const confidencePercent =
@@ -100,6 +105,9 @@ export default function InferencePage({
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      {/* Account Button */}
+      {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
+      
       {/* HEADER */}
       <View style={commonStyles.header}>
         <Text style={commonStyles.title}>🩺 NexDerm</Text>
