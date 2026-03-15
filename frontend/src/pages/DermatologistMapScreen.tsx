@@ -13,6 +13,7 @@ import {
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { commonStyles, colors } from '../utils/commonStyles';
+import AccountButton from './AccountButton';
 
 interface Dermatologist {
   name: string;
@@ -25,10 +26,14 @@ interface Dermatologist {
 
 interface DermatologistMapScreenProps {
   onBackToResults: () => void;
+  onAccountPress?: () => void;
+  userName?: string;
 }
 
 export default function DermatologistMapScreen({
   onBackToResults,
+  onAccountPress,
+  userName = 'User',
 }: DermatologistMapScreenProps) {
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -79,6 +84,7 @@ export default function DermatologistMapScreen({
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.container}>
+        {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Finding nearby dermatologists...</Text>
@@ -90,6 +96,7 @@ export default function DermatologistMapScreen({
   if (!userLocation) {
     return (
       <SafeAreaView style={commonStyles.container}>
+        {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Unable to get your location</Text>
           <TouchableOpacity
@@ -268,6 +275,9 @@ export default function DermatologistMapScreen({
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      {/* Account Button */}
+      {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
+      
       {/* HEADER */}
       <View style={commonStyles.header}>
         <Text style={commonStyles.title}>🩺 NexDerm</Text>

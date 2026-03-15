@@ -145,14 +145,14 @@ export const commonStyles = StyleSheet.create({
   // Buttons (Reusable)
   primaryButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 14,
+    paddingVertical: 20,
     paddingHorizontal: 36,
     borderRadius: 12,
     alignItems: "center",
   },
   secondaryButton: {
     backgroundColor: colors.secondary,
-    paddingVertical: 14,
+    paddingVertical: 20,
     paddingHorizontal: 36,
     borderRadius: 12,
     alignItems: "center",
@@ -160,7 +160,7 @@ export const commonStyles = StyleSheet.create({
   },
   tertiaryButton: {
     backgroundColor: colors.secondaryButtonBg,
-    paddingVertical: 14,
+    paddingVertical: 20,
     paddingHorizontal: 36,
     borderRadius: 12,
     alignItems: "center",
@@ -170,7 +170,7 @@ export const commonStyles = StyleSheet.create({
   buttonText: {
     color: colors.white,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   buttonTextSecondary: {
     color: colors.textSecondary,
