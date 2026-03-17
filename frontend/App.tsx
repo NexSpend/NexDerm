@@ -204,7 +204,16 @@ export default function App() {
       <HistoryPage
         onBackToAccount={() => {
           setShowHistory(false);
-          setShowAccount(true);
+
+          // 🔑 Reset everything else
+          setShowAccount(false);
+          setShowProfile(false);
+          setShowInference(false);
+          setShowDermatologistMap(false);
+
+          // (optional but clean)
+          setImage(null);
+          setInferenceResult(null);
         }}
       />
     );
