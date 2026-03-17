@@ -6,6 +6,9 @@ from PIL import Image
 from torch import nn
 from torchvision import models, transforms
 
+# --- NEW IMPORTS FOR CLIP FILTER ---
+from transformers import CLIPProcessor, CLIPModel
+
 # Checkpoint helpers
 def load_checkpoint(path: str | pathlib.Path, device: torch.device) -> Dict[str, Any]:
     p = pathlib.Path(path)
@@ -17,7 +20,6 @@ def load_checkpoint(path: str | pathlib.Path, device: torch.device) -> Dict[str,
     if not isinstance(ckpt, dict):
         raise ValueError(f"Checkpoint at {p} is not a dict.")
     return ckpt
-
 
 
 # State dict extraction
@@ -32,12 +34,12 @@ def get_state_dict(ckpt: Dict[str, Any]) -> Dict[str, torch.Tensor]:
     # TODO: support "state_dict" key if needed later
     return ckpt  # assume it's already a state_dict
 
+
 # Class mapping helper (Student C) - kept minimal on purpose
 def build_idx_to_class(class_to_idx: Dict[str, int]) -> List[str]:
     # NOTE: assumes indices are 0..N-1 in correct order
     items = sorted(class_to_idx.items(), key=lambda kv: kv[1])
     return [k for k, _ in items]
-
 
 
 # DenseNet Wrapper
@@ -98,7 +100,6 @@ class DenseNetDiseaseClassifier:
             return self.model(x)
 
 
-
 # ResNet Wrapper
 class ResNetDiseaseClassifier:
     def __init__(self, config: Dict[str, Any]):
@@ -108,9 +109,6 @@ class ResNetDiseaseClassifier:
         )
         self.model: Optional[nn.Module] = None
         self.idx_to_class: Optional[List[str]] = None
-
-        # NOTE: No transform stored here originally because we reused DenseNet preprocessing
-        # TODO: If accuracy is bad, add a separate transform for ResNet
 
     def load_from_checkpoint(
         self,
@@ -144,7 +142,6 @@ class ResNetDiseaseClassifier:
             raise RuntimeError("ResNet model not loaded.")
         with torch.no_grad():
             return self.model(x)
-
 
 
 # Ensemble (combined)
@@ -184,8 +181,6 @@ class EnsembleDiseaseClassifier:
         if self.idx_to_class is None:
             raise RuntimeError("Ensemble not loaded. Call load_from_checkpoints().")
 
-        # We currently use DenseNet preprocessing for both models.
-        # TODO: separate transforms if ResNet training used different normalization
         x = self.densenet.preprocess_image(image)
 
         dense_logits = self.densenet.predict_logits(x)
@@ -215,3 +210,67 @@ class EnsembleDiseaseClassifier:
                 },
             },
         }
+
+
+# --- NEW: SKIN FILTER WRAPPER ---
+class SkinFilterWrapper:
+    def __init__(self, disease_ensemble: EnsembleDiseaseClassifier, threshold: float = 0.7):
+        """
+        Wraps the existing ensemble with a CLIP-based Out-of-Distribution filter.
+        """
+        self.disease_ensemble = disease_ensemble
+        self.threshold = threshold
+        self.device = disease_ensemble.device
+        
+        print("Loading CLIP model for skin verification...")
+        self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device)
+        self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        self.clip_model.eval()
+        
+        # Zero-shot categories
+        self.labels = [
+            "a close-up photo of human skin or a skin lesion", 
+            "a photo of an everyday object, furniture, or background"
+        ]
+
+    def smart_predict(self, image: Image.Image) -> Dict[str, Any]:
+        """
+        Checks if the image is skin first. If it is, proceeds to the disease ensemble.
+        If not, aborts and returns an error message.
+        """
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # 1. Prepare inputs for CLIP
+        inputs = self.clip_processor(
+            text=self.labels, 
+            images=image, 
+            return_tensors="pt", 
+            padding=True
+        )
+        
+        # Move inputs to the correct device
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # 2. Run CLIP inference
+        with torch.no_grad():
+            outputs = self.clip_model(**inputs)
+            logits_per_image = outputs.logits_per_image
+            probs = logits_per_image.softmax(dim=1)
+            
+        # Probability of the first label ("human skin")
+        skin_prob = probs[0][0].item()
+
+        # 3. Filter logic
+        if skin_prob < self.threshold:
+            return {
+                "is_skin": False,
+                "prediction": "Unknown Object / Not Skin",
+                "confidence": float(1.0 - skin_prob),
+                "message": "Please provide a clear, close-up image of the affected skin area."
+            }
+
+        # 4. If it passes the filter, run the actual medical ensemble
+        ensemble_result = self.disease_ensemble.predict(image)
+        ensemble_result["is_skin"] = True
+        return ensemble_result
