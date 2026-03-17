@@ -30,6 +30,8 @@ interface InferencePageProps {
   onFindDermatologists?: () => void;
   onBackToUpload: () => void;
   onAccountPress?: () => void;
+  onShowProfile: () => void;
+  onShowHistory: () => void;
   userName?: string;
 }
 
