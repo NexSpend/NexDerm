@@ -3,7 +3,91 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.145:8000/api/v1";
+export const API_URL = "http://192.168.2.108:8000/api/v1";
+
+export interface VerifyOtpResponse {
+  message: string;
+  access_token: string;
+  token_type: string;
+  expires_at?: string; // ISO timestamp when the token expires
+}
+
+export const sendOtpCode = async (email: string, supabaseToken: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${supabaseToken}`,
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to send verification code (${response.status}): ${text}`);
+  }
+};
+
+export const sendOtpCodePublic = async (email: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/auth/send-otp-public`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to send verification code (${response.status}): ${text}`);
+  }
+};
+
+export const verifyOtpCode = async (
+  email: string,
+  code: string,
+  supabaseToken: string
+): Promise<VerifyOtpResponse> => {
+  const response = await fetch(`${API_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${supabaseToken}`,
+    },
+    body: JSON.stringify({ email, code }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Verification failed (${response.status}): ${text}`);
+  }
+
+  return (await response.json()) as VerifyOtpResponse;
+};
+
+export const verifyOtpCodePublic = async (
+  email: string,
+  code: string
+): Promise<VerifyOtpResponse> => {
+  const response = await fetch(`${API_URL}/auth/verify-otp-public`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ email, code }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Verification failed (${response.status}): ${text}`);
+  }
+
+  return (await response.json()) as VerifyOtpResponse;
+};
 
 import { Alert, Linking } from 'react-native';
 

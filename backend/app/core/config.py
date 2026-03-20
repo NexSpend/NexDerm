@@ -1,4 +1,4 @@
-from typing import Set
+from typing import Optional, Set
 from pydantic_settings import BaseSettings
 
 
@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str
     AWS_REGION: str
     AWS_S3_BUCKET_NAME: str
+
+    RESEND_API_KEY: Optional[str] = None
+    OTP_HASH_SECRET: str = "change-me-otp-hash-secret"
+    MFA_JWT_SECRET: str = "change-me-mfa-jwt-secret"
+    # Keep users logged in for 15 days (minutes)
+    MFA_JWT_EXPIRE_MINUTES: int = 60 * 24 * 15
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
