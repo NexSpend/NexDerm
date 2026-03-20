@@ -1,40 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
-  Alert,
   Image,
+  Alert,
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
+import { getUserInfo } from '../services/api';
 
 interface ProfilePageProps {
   onBackToAccount: () => void;
   onShowChangePassword: () => void;
 }
 
-export default function ProfilePage({ onBackToAccount, onShowChangePassword }: ProfilePageProps) {
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john@example.com');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+interface UserInfo {
+  full_name: string;
+  email: string;
+}
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
-      return;
+export default function ProfilePage({
+  onBackToAccount,
+  onShowChangePassword,
+}: ProfilePageProps) {
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadUserInfo();
+  }, []);
+
+  const loadUserInfo = async () => {
+    try {
+      const data = await getUserInfo();
+      console.log('USER INFO:', data);  
+      setUserInfo(data);
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      Alert.alert('Error', 'Failed to load profile information');
     }
-    if (!email.trim()) {
-      Alert.alert('Error', 'Email cannot be empty');
-      return;
-    }
-    // TODO: Save to database (including profileImage)
-    Alert.alert('Success', 'Profile updated successfully');
-    setIsEditing(false);
   };
 
   return (
@@ -44,13 +51,11 @@ export default function ProfilePage({ onBackToAccount, onShowChangePassword }: P
         <TouchableOpacity style={styles.backButton} onPress={onBackToAccount}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => setIsEditing(!isEditing)}
-        >
-          <Text style={styles.editButtonText}>{isEditing ? 'Done' : 'Edit'}</Text>
-        </TouchableOpacity>
+
+        {/* Empty view to keep header spacing balanced */}
+        <View style={styles.headerRightPlaceholder} />
       </View>
 
       {/* CONTENT */}
@@ -69,52 +74,27 @@ export default function ProfilePage({ onBackToAccount, onShowChangePassword }: P
             </View>
           </View>
 
-          {/* Editable Fields */}
+          {/* View-Only Fields */}
           <View style={styles.fieldsSection}>
             <Text style={styles.sectionTitle}>Personal Information</Text>
 
-            {/* Name Field */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Full Name</Text>
-              <TextInput
-                style={[
-                  styles.fieldInput,
-                  !isEditing && styles.fieldInputDisabled,
-                ]}
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your name"
-                placeholderTextColor={colors.textSecondary}
-                editable={isEditing}
-              />
+              <View style={[styles.fieldInput, styles.fieldInputDisabled]}>
+                <Text style={styles.fieldValue}>
+                  {userInfo?.full_name || 'N/A'}
+                </Text>
+              </View>
             </View>
 
-            {/* Email Field */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Email Address</Text>
-              <TextInput
-                style={[
-                  styles.fieldInput,
-                  !isEditing && styles.fieldInputDisabled,
-                ]}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                placeholderTextColor={colors.textSecondary}
-                editable={isEditing}
-                keyboardType="email-address"
-              />
+              <View style={[styles.fieldInput, styles.fieldInputDisabled]}>
+                <Text style={styles.fieldValue}>
+                  {userInfo?.email || 'N/A'}
+                </Text>
+              </View>
             </View>
-
-            {/* Save Button (shown only when editing) */}
-            {isEditing && (
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSave}
-              >
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           {/* Change Password Button */}
@@ -148,18 +128,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  editButton: {
-    padding: 8,
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+  },
+  headerRightPlaceholder: {
+    width: 50,
   },
   content: {
     flex: 1,
@@ -220,23 +195,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
-    color: colors.text,
   },
   fieldInputDisabled: {
     backgroundColor: colors.background,
   },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '700',
+  fieldValue: {
+    fontSize: 14,
+    color: colors.text,
   },
   changePasswordButton: {
     backgroundColor: colors.primary,
