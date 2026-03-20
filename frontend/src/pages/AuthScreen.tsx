@@ -164,14 +164,14 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   );
 }
 function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
-  const [username, setUsername] = useState('');
+  const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!username || !email || !password || !confirmPassword) {
+    if (!full_name || !email || !password || !confirmPassword) {
       Alert.alert('Missing Fields', 'Please fill in all fields.');
       return;
     }
@@ -201,6 +201,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       .from('newUsers')
       .insert([{
         id: supabaseUserId,
+        full_name: full_name,
         email: email,
         hashed_password: 'managed_by_supabase_auth',
         role: 'user',
@@ -221,13 +222,13 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   return (
     <View style={commonStyles.card}>
       <View style={commonStyles.inputGroup}>
-        <Text style={commonStyles.inputLabel}>Username</Text>
+        <Text style={commonStyles.inputLabel}>Full Name</Text>
         <TextInput
           style={commonStyles.textInput}
-          placeholder="Choose a username"
+          placeholder="Enter your full name"
           placeholderTextColor={colors.textPlaceholder}
-          value={username}
-          onChangeText={setUsername}
+          value={full_name}
+          onChangeText={setFullName}
           autoCapitalize="none"
           autoCorrect={false}
         />

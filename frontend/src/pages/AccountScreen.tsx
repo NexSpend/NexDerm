@@ -19,12 +19,8 @@ interface AccountScreenProps {
 }
 
 interface UserInfo {
+  full_name: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  age?: number;
-  gender?: string;
-  phone?: string;
 }
 
 interface MedicalHistoryItem {
@@ -138,40 +134,10 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
                   <Text style={styles.value}>{userInfo.email}</Text>
                 </View>
 
-                {userInfo.firstName && (
-                  <View style={styles.infoCard}>
-                    <Text style={styles.label}>First Name</Text>
-                    <Text style={styles.value}>{userInfo.firstName}</Text>
-                  </View>
-                )}
-
-                {userInfo.lastName && (
-                  <View style={styles.infoCard}>
-                    <Text style={styles.label}>Last Name</Text>
-                    <Text style={styles.value}>{userInfo.lastName}</Text>
-                  </View>
-                )}
-
-                {userInfo.age && (
-                  <View style={styles.infoCard}>
-                    <Text style={styles.label}>Age</Text>
-                    <Text style={styles.value}>{userInfo.age}</Text>
-                  </View>
-                )}
-
-                {userInfo.gender && (
-                  <View style={styles.infoCard}>
-                    <Text style={styles.label}>Gender</Text>
-                    <Text style={styles.value}>{userInfo.gender}</Text>
-                  </View>
-                )}
-
-                {userInfo.phone && (
-                  <View style={styles.infoCard}>
-                    <Text style={styles.label}>Phone</Text>
-                    <Text style={styles.value}>{userInfo.phone}</Text>
-                  </View>
-                )}
+                <View style={styles.infoCard}>
+                  <Text style={styles.label}>Full Name</Text>
+                  <Text style={styles.value}>{userInfo.full_name}</Text>
+                </View>
               </>
             )}
           </View>
