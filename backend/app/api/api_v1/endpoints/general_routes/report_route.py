@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
 
-from app.services.auth_service import get_current_user_id
+from app.services.auth_service import get_current_user_mfa
 from app.services.s3_service import S3Service
 from ..dataBase_endpoints.dataBase_connection import get_connection
 
@@ -13,6 +13,11 @@ s3_service = S3Service()
 @router.get("/latest", summary="Get the latest report for the logged-in user")
 def get_latest_report(authorization: Optional[str] = Header(None)):
     user_id = get_current_user_id(authorization)
+
+    user_id = get_current_user_mfa(authorization)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
     conn = get_connection()
     cursor = conn.cursor()
