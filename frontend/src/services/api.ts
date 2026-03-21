@@ -1,13 +1,10 @@
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
 export const API_URL = "http://10.0.0.193:8000/api/v1";
 
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { Alert, Linking } from 'react-native';
 
 export interface PredictionResponse {
@@ -46,10 +43,12 @@ export const uploadImage = async (
       type: "image/jpeg",
     } as any);
 
-    // Get JWT from AsyncStorage (if exists)
-    const token = await AsyncStorage.getItem('jwt');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    // Headers: only include Authorization if token exists
+    const token = session?.access_token;
+
     const headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -80,14 +79,23 @@ export const getNearbyDermatologists = async (
   limit: number = 10
 ): Promise<Dermatologist[]> => {
   try {
-    const token = await AsyncStorage.getItem('jwt'); // <-- get JWT
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+
+    if (!token) {
+      throw new Error('No logged-in user');
+    }
+
     const response = await fetch(
       `${API_URL}/dermatologists/nearby?latitude=${latitude}&longitude=${longitude}&radius_km=${radiusKm}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${token}`, // <-- ADD JWT HERE
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -116,7 +124,15 @@ export interface LatestReportResponse {
 
 export const getLatestReport = async (): Promise<LatestReportResponse> => {
   try {
-    const token = await AsyncStorage.getItem('jwt');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+
+    if (!token) {
+      throw new Error('No logged-in user');
+    }
 
     const response = await fetch(`${API_URL}/reports/latest`, {
       method: 'GET',
@@ -139,7 +155,15 @@ export const getLatestReport = async (): Promise<LatestReportResponse> => {
 };
 
 export const getUserInfo = async () => {
-  const token = await AsyncStorage.getItem('jwt');
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  if (!token) {
+    throw new Error('No logged-in user');
+  }
 
   const response = await fetch(`${API_URL}/users/info`, {
     method: 'GET',
@@ -159,7 +183,15 @@ export const getUserInfo = async () => {
 
 export const getMedicalHistory = async () => {
   try {
-    const token = await AsyncStorage.getItem('jwt');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+
+    if (!token) {
+      throw new Error('No logged-in user');
+    }
 
     const response = await fetch(`${API_URL}/reports/history`, {
       method: 'GET',

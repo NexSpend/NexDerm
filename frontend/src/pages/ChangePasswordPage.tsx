@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
+import { supabase } from '../services/supabase';
 
 interface ChangePasswordPageProps {
   onBackToProfile: () => void;
@@ -21,36 +22,83 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleChangePassword = () => {
-    if (!currentPassword.trim()) {
-      Alert.alert('Error', 'Please enter your current password');
-      return;
-    }
-    if (!newPassword.trim()) {
-      Alert.alert('Error', 'Please enter a new password');
-      return;
-    }
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-    if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password');
+const handleChangePassword = async () => {
+  if (!currentPassword.trim()) {
+    Alert.alert('Error', 'Please enter your current password');
+    return;
+  }
+
+  if (!newPassword.trim()) {
+    Alert.alert('Error', 'Please enter a new password');
+    return;
+  }
+
+  if (!confirmPassword.trim()) {
+    Alert.alert('Error', 'Please confirm your new password');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    Alert.alert('Error', 'Password must be at least 6 characters long');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    Alert.alert('Error', 'Passwords do not match');
+    return;
+  }
+
+  if (currentPassword === newPassword) {
+    Alert.alert('Error', 'New password must be different from current password');
+    return;
+  }
+
+  try {
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user || !user.email) {
+      Alert.alert('Error', 'User not logged in');
       return;
     }
 
-    // TODO: Call API to change password
-    Alert.alert('Success', 'Password changed successfully');
+    // 🔑 Step 1: Verify current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      Alert.alert('Error', 'Current password is incorrect');
+      return;
+    }
+
+    // 🔒 Step 2: Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (updateError) {
+      Alert.alert('Error', updateError.message);
+      return;
+    }
+
+    Alert.alert('Success', 'Password updated successfully');
+
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+
     onBackToProfile();
-  };
+  } catch (err: any) {
+    Alert.alert('Error', err.message || 'Something went wrong');
+  }
+};
 
   const PasswordToggleButton = ({ show, onPress }: { show: boolean; onPress: () => void }) => (
     <TouchableOpacity style={styles.toggleButton} onPress={onPress}>
@@ -60,7 +108,6 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBackToProfile}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -69,10 +116,8 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
         <View style={styles.placeholder} />
       </View>
 
-      {/* CONTENT */}
       <View style={styles.content}>
         <View style={styles.formContainer}>
-          {/* Current Password Field */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Current Password</Text>
             <View style={styles.passwordInputContainer}>
@@ -83,6 +128,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
                 placeholder="Enter current password"
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showCurrentPassword}
+                editable={!loading}
               />
               <PasswordToggleButton
                 show={showCurrentPassword}
@@ -91,7 +137,6 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
             </View>
           </View>
 
-          {/* New Password Field */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>New Password</Text>
             <View style={styles.passwordInputContainer}>
@@ -102,6 +147,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
                 placeholder="Enter new password"
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showNewPassword}
+                editable={!loading}
               />
               <PasswordToggleButton
                 show={showNewPassword}
@@ -110,7 +156,6 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
             </View>
           </View>
 
-          {/* Confirm Password Field */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Confirm Password</Text>
             <View style={styles.passwordInputContainer}>
@@ -121,6 +166,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
                 placeholder="Confirm new password"
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showConfirmPassword}
+                editable={!loading}
               />
               <PasswordToggleButton
                 show={showConfirmPassword}
@@ -129,12 +175,14 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
             </View>
           </View>
 
-          {/* Change Password Button */}
           <TouchableOpacity
-            style={styles.changeButton}
+            style={[styles.changeButton, loading && styles.changeButtonDisabled]}
             onPress={handleChangePassword}
+            disabled={loading}
           >
-            <Text style={styles.changeButtonText}>Change Password</Text>
+            <Text style={styles.changeButtonText}>
+              {loading ? 'Changing Password...' : 'Change Password'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -214,6 +262,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  changeButtonDisabled: {
+    opacity: 0.7,
   },
   changeButtonText: {
     color: colors.white,

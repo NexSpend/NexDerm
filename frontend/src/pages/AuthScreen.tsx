@@ -32,19 +32,16 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={commonStyles.flex}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={commonStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* HEADER */}
           <View style={commonStyles.header}>
             <Text style={commonStyles.title}>🩺 NexDerm</Text>
             <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
           </View>
 
-          {/* BODY */}
           <View style={commonStyles.body}>
-            {/* Tile Selector */}
             <View style={styles.tileContainer}>
               <TouchableOpacity
                 style={[styles.tile, authMode === 'signin' && styles.tileActive]}
@@ -65,14 +62,12 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
               </TouchableOpacity>
             </View>
 
-            {/* Forms */}
             {authMode === 'signin' ? (
-              <SignInForm onAuthSuccess={onAuthSuccess}/>
+              <SignInForm onAuthSuccess={onAuthSuccess} />
             ) : (
-              <SignUpForm onAuthSuccess={onAuthSuccess}/>
+              <SignUpForm onAuthSuccess={onAuthSuccess} />
             )}
 
-            {/* Guest Button */}
             <TouchableOpacity
               style={commonStyles.secondaryButton}
               onPress={onGuestContinue}
@@ -81,7 +76,6 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
             </TouchableOpacity>
           </View>
 
-          {/* FOOTER */}
           <View style={commonStyles.footer}>
             <Text style={commonStyles.disclaimer}>
               Your data is secure. By continuing, you agree to our Terms & Privacy Policy.
@@ -103,27 +97,33 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       Alert.alert('Missing Fields', 'Please enter your email and password.');
       return;
     }
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     setLoading(false);
+
     if (error) {
       Alert.alert('Sign In Failed', error.message);
-    } else {
-      const token = data.session?.access_token; // <-- get JWT
-      if (!token) {
-        Alert.alert('Error', 'No access token found.');
-        return;
-      }
-
-      // Save JWT for backend calls
-      await AsyncStorage.setItem('jwt', token);
-
-      onAuthSuccess();
+      return;
     }
+
+    const token = data.session?.access_token;
+    if (!token) {
+      Alert.alert('Error', 'No access token found.');
+      return;
+    }
+
+    await AsyncStorage.setItem('jwt', token);
+    onAuthSuccess();
   };
 
   const handleForgotPassword = () => {
-    Alert.alert("Forgot Password", "Password reset feature coming soon.");
+    Alert.alert('Forgot Password', 'Password reset feature coming soon.');
   };
 
   return (
@@ -141,6 +141,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           autoCorrect={false}
         />
       </View>
+
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Password</Text>
         <TextInput
@@ -154,15 +155,26 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           autoCorrect={false}
         />
       </View>
+
       <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
         <Text style={commonStyles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignIn} disabled={loading}>
-        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Login</Text>}
+
+      <TouchableOpacity
+        style={commonStyles.primaryButton}
+        onPress={handleSignIn}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
 }
+
 function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -175,48 +187,75 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       Alert.alert('Missing Fields', 'Please fill in all fields.');
       return;
     }
+
     if (password !== confirmPassword) {
       Alert.alert('Password Mismatch', 'Passwords do not match.');
       return;
     }
+
     if (password.length < 6) {
       Alert.alert('Weak Password', 'Password must be at least 6 characters.');
       return;
     }
+
     setLoading(true);
 
     // Step 1: Create auth account in Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
     if (error) {
       setLoading(false);
       Alert.alert('Sign Up Failed', error.message);
       return;
     }
-    console.log('Reached Step 2 - inserting into users table');
 
-    const { data: { session } } = await supabase.auth.getSession();
-    const supabaseUserId = session.user.id;  // UUID from Supabase Auth
-    // Step 2: Insert record into your users table
-    const { data: insertData, error: dbError } = await supabase
-      .from('newUsers')
-      .insert([{
+    const supabaseUserId = data.user?.id;
+
+    if (!supabaseUserId) {
+      setLoading(false);
+      Alert.alert('Sign Up Failed', 'User account created, but no user ID was returned.');
+      return;
+    }
+
+    // Step 2: Insert profile into your own table
+    const { error: dbError } = await supabase.from('newUsers').insert([
+      {
         id: supabaseUserId,
-        full_name: full_name,
-        email: email,
-        hashed_password: 'managed_by_supabase_auth',
+        full_name,
+        email,
         role: 'user',
-      }]);
-    console.log('Insert result:', insertData);
-    console.log('Insert error:', dbError);
+      },
+    ]);
+
     setLoading(false);
 
     if (dbError) {
-      Alert.alert('Warning', `Account created but profile save failed: ${dbError.message}`);
-    } else {
-      Alert.alert('Account Created!', 'Your account has been created successfully.',
-        [{ text: 'OK', onPress: onAuthSuccess }]
+      Alert.alert(
+        'Warning',
+        `Account created but profile save failed: ${dbError.message}`
       );
+      return;
     }
+
+    // If email confirmation is enabled, session may be null here
+    if (!data.session) {
+      Alert.alert(
+        'Account Created!',
+        'Please check your email and verify your account before signing in.'
+      );
+      return;
+    }
+
+    // If a session exists immediately, save JWT and log in
+    const token = data.session.access_token;
+    await AsyncStorage.setItem('jwt', token);
+
+    Alert.alert('Account Created!', 'Your account has been created successfully.', [
+      { text: 'OK', onPress: onAuthSuccess },
+    ]);
   };
 
   return (
@@ -229,10 +268,11 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           placeholderTextColor={colors.textPlaceholder}
           value={full_name}
           onChangeText={setFullName}
-          autoCapitalize="none"
+          autoCapitalize="words"
           autoCorrect={false}
         />
       </View>
+
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Email</Text>
         <TextInput
@@ -246,6 +286,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           keyboardType="email-address"
         />
       </View>
+
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Password</Text>
         <TextInput
@@ -259,6 +300,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           autoCorrect={false}
         />
       </View>
+
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Confirm Password</Text>
         <TextInput
@@ -272,15 +314,23 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           autoCorrect={false}
         />
       </View>
-      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignUp} disabled={loading}>
-        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Create Account</Text>}
+
+      <TouchableOpacity
+        style={commonStyles.primaryButton}
+        onPress={handleSignUp}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Create Account</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
 }
-//Styles unique to AuthScreen
+
 const styles = StyleSheet.create({
-  // Tile Selector (unique to AuthScreen)
   tileContainer: {
     flexDirection: 'row',
     width: 280,

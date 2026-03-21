@@ -1,17 +1,14 @@
 # app/api/users.py
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user_id
 from ..dataBase_endpoints.dataBase_connection import get_connection
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.get("/info")
 async def get_user_info(authorization: Optional[str] = Header(None)):
-    user_id = get_current_user(authorization)
-
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = get_current_user_id(authorization)
 
     conn = get_connection()
     cursor = conn.cursor()
