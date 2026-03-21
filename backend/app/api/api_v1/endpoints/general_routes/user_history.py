@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user_id
 from ..dataBase_endpoints.dataBase_connection import get_connection
 import boto3
 import os
@@ -8,16 +8,14 @@ import os
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 s3_client = boto3.client("s3")
-BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")  # use your real env var name
+BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+
 
 @router.get("/history", summary="Get report history for logged-in user")
 async def get_report_history(
     authorization: Optional[str] = Header(None)
 ):
-    user_id = get_current_user(authorization)
-
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = get_current_user_id(authorization)
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -56,7 +54,7 @@ async def get_report_history(
                 )
 
             reports.append({
-                "id": report_id,
+                "id": str(report_id),
                 "prediction": prediction,
                 "confidence": confidence,
                 "report_url": report_url,
