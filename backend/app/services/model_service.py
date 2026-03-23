@@ -6,7 +6,8 @@ import torch
 from PIL import Image
 
 from app.core.config import settings
-from app.models.ml.model import EnsembleDiseaseClassifier
+# Ensure you import the new wrapper from wherever you placed it
+from app.models.ml.model import EnsembleDiseaseClassifier, SkinFilterWrapper
 
 
 class ModelService:
@@ -16,38 +17,47 @@ class ModelService:
     """
 
     _instance = None
-    classifier: Optional[EnsembleDiseaseClassifier] = None
+    classifier_pipeline: Optional[SkinFilterWrapper] = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.classifier = cls._load_model()
+            cls._instance.classifier_pipeline = cls._load_model_pipeline()
         return cls._instance
 
     @staticmethod
-    def _load_model() -> EnsembleDiseaseClassifier:
+    def _load_model_pipeline() -> SkinFilterWrapper:
+        print("Initializing the ML Pipeline (Ensemble + CLIP Filter)...")
         config = {
             "device": "cuda" if torch.cuda.is_available() else "cpu",
             "w_dense": float(settings.ENSEMBLE_WEIGHT_DENSENET),
             "w_resnet": float(settings.ENSEMBLE_WEIGHT_RESNET),
         }
 
-        classifier = EnsembleDiseaseClassifier(config=config)
-        classifier.load_from_checkpoints(
+        # 1. Load the underlying ensemble
+        ensemble = EnsembleDiseaseClassifier(config=config)
+        ensemble.load_from_checkpoints(
             pathlib.Path(settings.MODEL_PATH_DENSENET),
             pathlib.Path(settings.MODEL_PATH_RESNET),
         )
 
-        return classifier
+        # 2. Wrap it with the CLIP skin filter
+        # (Optional: You can add SKIN_FILTER_THRESHOLD to your config settings later)
+        threshold = getattr(settings, "SKIN_FILTER_THRESHOLD", 0.7)
+        pipeline = SkinFilterWrapper(disease_ensemble=ensemble, threshold=threshold)
 
-    def predict_from_image_bytes(self, image_bytes: bytes) -> Dict[str, Any]:
-        image = Image.open(io.BytesIO(image_bytes))
+        return pipeline
 
-        if self.classifier is None:
-            raise RuntimeError("Model is not loaded.")
+    def smart_predict(self, image: Image.Image) -> Dict[str, Any]:
+        """
+        Takes a PIL Image, runs it through the CLIP filter, and if valid,
+        passes it to the disease ensemble.
+        """
+        if self.classifier_pipeline is None:
+            raise RuntimeError("Model pipeline is not loaded.")
 
-        result = self.classifier.predict(image)
-        return result["prediction"], result["confidence"]
+        # The SkinFilterWrapper handles the logic and returns the structured dictionary
+        return self.classifier_pipeline.smart_predict(image)
 
 # Global instance reused across API routes
 model_service = ModelService()

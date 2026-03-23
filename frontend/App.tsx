@@ -20,6 +20,8 @@ import ProfilePage from './src/pages/ProfilePage';
 import HistoryPage from './src/pages/HistoryPage';
 import ChangePasswordPage from './src/pages/ChangePasswordPage';
 import AccountButton from './src/pages/AccountButton';
+import DoctorDashboard from './src/pages/DoctorDashboard';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Added for checking JWT
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
@@ -28,6 +30,7 @@ import LoadingScreen from "./src/pages/LoadingScreen";
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
@@ -37,6 +40,17 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [userName, setUserName] = useState('User');
+
+  // Effect to check authentication status and user role on app start
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const token = await AsyncStorage.getItem('jwt');
+      if (token) {
+        setIsAuthenticated(true);
+      }
+    };
+    checkAuthStatus();
+  }, []);
   
   const panResponderRef = useRef<any>(null);
 
@@ -45,6 +59,7 @@ export default function App() {
     setIsAuthenticated(false);
     setIsGuest(false);
     setImage(null);
+    setUserRole(null);
     setInferenceResult(null);
     setShowInference(false);
   };
@@ -169,8 +184,11 @@ export default function App() {
 
   if (!isAuthenticated && !isGuest) {
     return (
-      <AuthScreen
-        onAuthSuccess={() => setIsAuthenticated(true)}
+      <AuthScreen 
+        onAuthSuccess={(role) => {
+      setIsAuthenticated(true);
+          setUserRole(role);
+        }}
         onGuestContinue={() => setIsGuest(true)}
       />
     );
@@ -218,6 +236,16 @@ export default function App() {
       />
     );
   }
+
+  if (isAuthenticated && userRole === 'doctor') { // Conditional rendering for Doctor Portal
+    return (
+      <DoctorDashboard 
+        onLogout={handleBackToSignup} 
+      />
+    );
+  }
+
+
   if (isLoading) {
     return (
       <>
@@ -238,6 +266,7 @@ export default function App() {
       </>
     );
   }
+  
   if (showDermatologistMap) {
     return (
       <>

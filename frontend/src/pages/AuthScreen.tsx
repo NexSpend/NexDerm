@@ -19,7 +19,7 @@ import { supabase } from '../services/supabase';
 type AuthMode = 'signin' | 'signup';
 
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (role: string) => void;
   onGuestContinue: () => void;
 }
 
@@ -87,7 +87,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
   );
 }
 
-function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -108,6 +108,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     setLoading(false);
 
     if (error) {
+      setLoading(false);
       Alert.alert('Sign In Failed', error.message);
       return;
     }
@@ -175,7 +176,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   );
 }
 
-function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

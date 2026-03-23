@@ -2,6 +2,8 @@ from fastapi import APIRouter, UploadFile, File, Header, HTTPException
 from typing import Optional
 from uuid import uuid4
 import traceback
+import io
+from PIL import Image
 
 from app.services.model_service import model_service
 from app.services.report_service import generate_report
@@ -32,7 +34,28 @@ async def classify_image(
         image_bytes = await file.read()
         print("STEP 2: image read, bytes =", len(image_bytes))
 
-        label, confidence = model_service.predict_from_image_bytes(image_bytes)
+        # --- NEW: Convert bytes to PIL Image ---
+        try:
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid image file uploaded.")
+
+        # --- NEW: Run the smart prediction (CLIP Filter + Ensemble) ---
+        # Assuming model_service now exposes the `smart_predict` method
+        result = model_service.smart_predict(image)
+        
+        # --- NEW: Check if the image is actually skin ---
+        if not result.get("is_skin", True):
+            print("STEP 2.5: Image rejected by skin filter.")
+            # Return a 400 Bad Request to stop execution and alert the frontend
+            raise HTTPException(
+                status_code=400, 
+                detail=result.get("message", "Please provide a clear, close-up image of the affected skin area.")
+            )
+
+        # Extract prediction and confidence from the dictionary
+        label = result["prediction"]
+        confidence = result["confidence"]
         print("STEP 3: prediction done =", label, confidence)
 
         response = {
