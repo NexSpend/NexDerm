@@ -19,7 +19,7 @@ import { supabase } from '../services/supabase';
 type AuthMode = 'signin' | 'signup';
 
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (role: string) => void;
   onGuestContinue: () => void;
 }
 
@@ -93,7 +93,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
   );
 }
 
-function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,12 +105,14 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     }
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    
     if (error) {
+      setLoading(false);
       Alert.alert('Sign In Failed', error.message);
     } else {
       const token = data.session?.access_token; // <-- get JWT
       if (!token) {
+        setLoading(false);
         Alert.alert('Error', 'No access token found.');
         return;
       }
@@ -118,7 +120,20 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       // Save JWT for backend calls
       await AsyncStorage.setItem('jwt', token);
 
-      onAuthSuccess();
+      // Fetch user role from 'newUsers' table
+      const { data: userData, error: userError } = await supabase
+        .from('newUsers')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      setLoading(false);
+
+      if (userError) {
+        Alert.alert('Error', 'Failed to fetch user role.');
+      } else {
+        onAuthSuccess(userData.role);
+      }
     }
   };
 
@@ -163,7 +178,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     </View>
   );
 }
-function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -213,7 +228,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       Alert.alert('Warning', `Account created but profile save failed: ${dbError.message}`);
     } else {
       Alert.alert('Account Created!', 'Your account has been created successfully.',
-        [{ text: 'OK', onPress: onAuthSuccess }]
+        [{ text: 'OK', onPress: () => onAuthSuccess('user') }]
       );
     }
   };
