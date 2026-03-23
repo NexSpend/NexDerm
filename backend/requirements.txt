@@ -19,3 +19,4 @@ torch
 torchvision
 boto3
 reportlab
+transformers
