@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.145:8000/api/v1";
+export const API_URL = "http://192.168.0.101:8000/api/v1";
 
 
 export interface PredictionResponse {
@@ -43,19 +43,17 @@ export const uploadImage = async (
       type: "image/jpeg",
     } as any);
 
-    // Get JWT from AsyncStorage (if exists)
     const token = await AsyncStorage.getItem('jwt');
-
-    // Headers: only include Authorization if token exists
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (!token) {
+        throw new Error("Authentication token not found.");
     }
 
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
       body: formData,
-      headers,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -77,14 +75,16 @@ export const getNearbyDermatologists = async (
   limit: number = 10
 ): Promise<Dermatologist[]> => {
   try {
-    const token = await AsyncStorage.getItem('jwt'); // <-- get JWT
+    const token = await AsyncStorage.getItem('jwt');
+    if (!token) throw new Error("Authentication token not found.");
+
     const response = await fetch(
       `${API_URL}/dermatologists/nearby?latitude=${latitude}&longitude=${longitude}&radius_km=${radiusKm}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${token}`, // <-- ADD JWT HERE
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -133,4 +133,78 @@ export const getLatestReport = async (): Promise<LatestReportResponse> => {
     console.error('Error fetching latest report:', error);
     throw error;
   }
+};
+
+/**
+ * Interface for a pending case report.
+ */
+
+export interface PendingCase {
+    id: string;
+    prediction: string;
+    confidence: number;
+    created_at: string;
+}
+
+/**
+ * Fetches a list of pending cases that require a doctor's review.
+ * Requires a JWT for authentication.
+ * @returns A promise that resolves to an array of PendingCase objects.
+ * @throws Error if authentication token is not found or API call fails.
+ */
+export const getPendingCases = async (): Promise<PendingCase[]> => {
+    try {
+        const token = await AsyncStorage.getItem('jwt');
+        if (!token) throw new Error("Authentication token not found.");
+        // Make GET request to the backend /doctors/pending endpoint
+
+        const response = await fetch(`${API_URL}/doctors/pending`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch pending cases (${response.status}): ${errorText}`);
+        } 
+
+        return (await response.json()) as PendingCase[];
+    } catch (error) {
+        console.error("Error fetching pending cases:", error);
+        throw error;
+    }
+};
+
+export const submitDoctorReview = async (caseId: string, notes: string, diagnosis: string): Promise<any> => {
+    try {
+        const token = await AsyncStorage.getItem('jwt');
+        if (!token) throw new Error("Authentication token not found.");
+
+        const body = JSON.stringify({
+            doctor_notes: notes,
+            final_diagnosis: diagnosis,
+        });
+
+        const response = await fetch(`${API_URL}/doctors/${caseId}/review`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: body,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to submit review (${response.status}): ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error submitting doctor review:", error);
+        throw error;
+    }
 };
