@@ -57,7 +57,9 @@ export const uploadImage = async (
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
       body: formData,
-      headers,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -234,3 +236,76 @@ export interface ProfileResponse {
   full_name: string;
   email: string;
 }
+/**
+ * Interface for a pending case report.
+ */
+
+export interface PendingCase {
+    id: string;
+    prediction: string;
+    confidence: number;
+    created_at: string;
+}
+
+/**
+ * Fetches a list of pending cases that require a doctor's review.
+ * Requires a JWT for authentication.
+ * @returns A promise that resolves to an array of PendingCase objects.
+ * @throws Error if authentication token is not found or API call fails.
+ */
+export const getPendingCases = async (): Promise<PendingCase[]> => {
+    try {
+        const token = await AsyncStorage.getItem('jwt');
+        if (!token) throw new Error("Authentication token not found.");
+        // Make GET request to the backend /doctors/pending endpoint
+
+        const response = await fetch(`${API_URL}/doctors/pending`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch pending cases (${response.status}): ${errorText}`);
+        } 
+
+        return (await response.json()) as PendingCase[];
+    } catch (error) {
+        console.error("Error fetching pending cases:", error);
+        throw error;
+    }
+};
+
+export const submitDoctorReview = async (caseId: string, notes: string, diagnosis: string): Promise<any> => {
+    try {
+        const token = await AsyncStorage.getItem('jwt');
+        if (!token) throw new Error("Authentication token not found.");
+
+        const body = JSON.stringify({
+            doctor_notes: notes,
+            final_diagnosis: diagnosis,
+        });
+
+        const response = await fetch(`${API_URL}/doctors/${caseId}/review`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: body,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to submit review (${response.status}): ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error submitting doctor review:", error);
+        throw error;
+    }
+};
