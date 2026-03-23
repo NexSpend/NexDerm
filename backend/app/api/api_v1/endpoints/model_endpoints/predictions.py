@@ -7,7 +7,7 @@ from PIL import Image
 
 from app.services.model_service import model_service
 from app.services.report_service import generate_report
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_optional_current_user_id
 from app.services.s3_service import S3Service
 from app.services.pdf_service import generate_prediction_report_pdf
 from ..dataBase_endpoints.dataBase_connection import get_connection
@@ -15,7 +15,8 @@ from ..dataBase_endpoints.dataBase_connection import get_connection
 router = APIRouter()
 s3_service = S3Service()
 
-@router.post("/", summary="Upload an image, get prediction, generate PDF, and store report")
+
+@router.post("/", summary="Upload an image, get prediction, and optionally generate/store a report for logged-in users")
 async def classify_image(
     *,
     file: UploadFile = File(...),
@@ -27,11 +28,8 @@ async def classify_image(
     try:
         print("STEP 0: start endpoint")
 
-        user_id = get_current_user(authorization)
+        user_id = get_optional_current_user_id(authorization)
         print("STEP 1: user_id =", user_id)
-
-        if not user_id:
-            raise HTTPException(status_code=401, detail="User not authenticated")
 
         image_bytes = await file.read()
         print("STEP 2: image read, bytes =", len(image_bytes))
@@ -60,11 +58,22 @@ async def classify_image(
         confidence = result["confidence"]
         print("STEP 3: prediction done =", label, confidence)
 
+        response = {
+            "prediction": label,
+            "confidence": confidence,
+            "recommendations": "This is a demo response. Please consult a dermatologist."
+        }
+
+        # Guest user -> only return prediction, no PDF/report storage
+        if not user_id:
+            print("STEP 4: guest user detected, skipping PDF generation and DB storage")
+            return response
+
         report_text = generate_report(label, confidence)
-        print("STEP 4: report text generated")
+        print("STEP 5: report text generated")
 
         report_id = str(uuid4())
-        print("STEP 5: report_id =", report_id)
+        print("STEP 6: report_id =", report_id)
 
         pdf_bytes = generate_prediction_report_pdf(
             patient_id=str(user_id),
@@ -73,15 +82,15 @@ async def classify_image(
             confidence=confidence,
             report_text=report_text,
         )
-        print("STEP 6: PDF generated, bytes =", len(pdf_bytes))
+        print("STEP 7: PDF generated, bytes =", len(pdf_bytes))
 
         s3_key = f"reports/{user_id}/{report_id}/report.pdf"
         s3_service.upload_pdf_bytes(pdf_bytes, s3_key)
-        print("STEP 7: PDF uploaded to S3, key =", s3_key)
+        print("STEP 8: PDF uploaded to S3, key =", s3_key)
 
         conn = get_connection()
         cursor = conn.cursor()
-        print("STEP 8: DB connection opened")
+        print("STEP 9: DB connection opened")
 
         cursor.execute(
             """
@@ -94,14 +103,10 @@ async def classify_image(
 
         saved_report_id = cursor.fetchone()[0]
         conn.commit()
-        print("STEP 9: DB insert committed, saved_report_id =", saved_report_id)
+        print("STEP 10: DB insert committed, saved_report_id =", saved_report_id)
 
-        return {
-            "prediction": label,
-            "confidence": confidence,
-            "report_id": str(saved_report_id),
-            "recommendations": "This is a demo response. Please consult a dermatologist."
-        }
+        response["report_id"] = str(saved_report_id)
+        return response
 
     except HTTPException:
         raise
