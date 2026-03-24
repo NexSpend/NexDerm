@@ -14,7 +14,12 @@ import {
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
-import { sendOtpCode, sendOtpCodePublic, verifyOtpCode, verifyOtpCodePublic } from '../services/api';
+import {
+  sendOtpCode,
+  sendOtpCodePublic,
+  verifyOtpCode,
+  verifyOtpCodePublic,
+} from '../services/api';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -68,10 +73,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
               <SignUpForm onAuthSuccess={onAuthSuccess} />
             )}
 
-            <TouchableOpacity
-              style={commonStyles.secondaryButton}
-              onPress={onGuestContinue}
-            >
+            <TouchableOpacity style={commonStyles.secondaryButton} onPress={onGuestContinue}>
               <Text style={commonStyles.buttonText}>Continue as Guest</Text>
             </TouchableOpacity>
           </View>
@@ -115,16 +117,14 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       }
 
       await sendOtpCode(email, token);
-
       setSupabaseToken(token);
       setAwaitingOTP(true);
-
-      // IMPORTANT:
-      // Do NOT call onAuthSuccess here.
-      // User should only enter app after OTP verification succeeds.
     } catch (error: any) {
-      await supabase.auth.signOut();
-      Alert.alert('Sign In Failed', error.message || 'Unable to sign in.');
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+
+      Alert.alert('Sign In Failed', error?.message || 'Unable to sign in.');
     } finally {
       setLoading(false);
     }
@@ -141,9 +141,10 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
       await sendOtpCode(email, latestToken);
       setSupabaseToken(latestToken);
+
       Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
     } catch (error: any) {
-      Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+      Alert.alert('Resend Failed', error?.message || 'Failed to resend code.');
     }
   };
 
@@ -155,15 +156,21 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       Alert.alert('Password Reset', 'Password reset instructions have been sent to your email.');
     } catch (error: any) {
-      Alert.alert('Reset Failed', error.message || 'Could not send reset email.');
+      Alert.alert('Reset Failed', error?.message || 'Could not send reset email.');
     }
   };
 
   const handleBackFromOTP = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+
     setSupabaseToken('');
     setAwaitingOTP(false);
   };
@@ -219,11 +226,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
         onPress={handleSignIn}
         disabled={loading}
       >
-        {loading ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={commonStyles.buttonText}>Login</Text>
-        )}
+        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Login</Text>}
       </TouchableOpacity>
     </View>
   );
@@ -276,15 +279,16 @@ function OTPVerificationForm({
         .from('newUsers')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (roleError) {
-        throw new Error('Failed to fetch user role.');
+        onAuthSuccess('user');
+        return;
       }
 
-      onAuthSuccess(userData.role);
+      onAuthSuccess(userData?.role || 'user');
     } catch (error: any) {
-      Alert.alert('Verification Failed', error.message || 'Invalid verification code.');
+      Alert.alert('Verification Failed', error?.message || 'Invalid verification code.');
     } finally {
       setLoading(false);
     }
@@ -346,7 +350,7 @@ function OTPVerificationForm({
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.otpBackButton} onPress={onBack}>
-        <Text style={styles.otpBackText}>← Back to Login</Text>
+        <Text style={styles.otpBackText}>← Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -380,7 +384,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -391,11 +395,15 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       });
 
       if (error) {
+        console.error('SUPABASE SIGNUP ERROR:', error);
         throw error;
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token ?? '';
+      if (!data?.user) {
+        throw new Error('Signup succeeded but no user was returned.');
+      }
+
+      const token = data.session?.access_token ?? '';
 
       if (token) {
         await sendOtpCode(email, token);
@@ -406,77 +414,84 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       }
 
       setAwaitingOTP(true);
-
-      // IMPORTANT:
-      // still do NOT call onAuthSuccess here
     } catch (error: any) {
-      await supabase.auth.signOut();
-      Alert.alert('Sign Up Failed', error.message || 'Unable to create account.');
+      console.error('FULL SIGN UP ERROR:', JSON.stringify(error, null, 2));
+      console.error('FULL SIGN UP ERROR RAW:', error);
+
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+
+      Alert.alert(
+        'Sign Up Failed',
+        error?.message || error?.error_description || 'Unable to create account.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleBackFromOTP = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+
     setSupabaseToken('');
     setAwaitingOTP(false);
   };
 
   if (awaitingOTP) {
     return (
-      <View style={commonStyles.card}>
-        <OTPVerificationForm
-          email={email}
-          supabaseToken={supabaseToken}
-          onAuthSuccess={async () => {
-            try {
-              const {
-                data: { user },
-                error: userError,
-              } = await supabase.auth.getUser();
+      <OTPVerificationForm
+        email={email}
+        supabaseToken={supabaseToken}
+        onAuthSuccess={async () => {
+          try {
+            const {
+              data: { user },
+              error: userError,
+            } = await supabase.auth.getUser();
 
-              if (userError || !user) {
-                throw new Error('Could not get the authenticated user.');
-              }
+            if (userError || !user) {
+              throw new Error('Could not get the authenticated user.');
+            }
 
-              const { data: userData, error: roleError } = await supabase
-                .from('newUsers')
-                .select('role')
-                .eq('id', user.id)
-                .single();
+            const { data: userData, error: roleError } = await supabase
+              .from('newUsers')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
 
-              if (roleError) {
-                onAuthSuccess('user');
-                return;
-              }
-
-              onAuthSuccess(userData.role);
-            } catch {
+            if (roleError) {
               onAuthSuccess('user');
+              return;
             }
-          }}
-          onResend={async () => {
-            try {
-              const { data } = await supabase.auth.getSession();
-              const latestToken = data.session?.access_token || supabaseToken;
 
-              if (latestToken) {
-                await sendOtpCode(email, latestToken);
-                setSupabaseToken(latestToken);
-              } else {
-                await sendOtpCodePublic(email);
-                setSupabaseToken('');
-              }
+            onAuthSuccess(userData?.role || 'user');
+          } catch {
+            onAuthSuccess('user');
+          }
+        }}
+        onResend={async () => {
+          try {
+            const { data } = await supabase.auth.getSession();
+            const latestToken = data.session?.access_token || supabaseToken;
 
-              Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
-            } catch (error: any) {
-              Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+            if (latestToken) {
+              await sendOtpCode(email, latestToken);
+              setSupabaseToken(latestToken);
+            } else {
+              await sendOtpCodePublic(email);
+              setSupabaseToken('');
             }
-          }}
-          onBack={handleBackFromOTP}
-        />
-      </View>
+
+            Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+          } catch (error: any) {
+            Alert.alert('Resend Failed', error?.message || 'Failed to resend code.');
+          }
+        }}
+        onBack={handleBackFromOTP}
+      />
     );
   }
 
