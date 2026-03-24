@@ -3,7 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 import traceback
 
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user_id
 from app.api.api_v1.endpoints.dataBase_endpoints.dataBase_connection import get_connection
 
 router = APIRouter()
@@ -23,7 +23,7 @@ async def get_pending_cases(
     conn = None
     cursor = None
     try:
-        user_id = get_current_user(authorization)
+        user_id = get_current_user_id(authorization)
         if not user_id:
             # If user is not authenticated, raise 401
             raise HTTPException(status_code=401, detail="User not authenticated")
@@ -85,7 +85,7 @@ async def review_case(
     conn = None
     cursor = None
     try:
-        doctor_id = get_current_user(authorization)
+        doctor_id = get_current_user_id(authorization)
         if not doctor_id:
             # If doctor is not authenticated, raise 401
             raise HTTPException(status_code=401, detail="User not authenticated")
