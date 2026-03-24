@@ -11,6 +11,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from "react-native";
+import { supabase } from './src/services/supabase'; // adjust path
 import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
@@ -21,7 +22,6 @@ import HistoryPage from './src/pages/HistoryPage';
 import ChangePasswordPage from './src/pages/ChangePasswordPage';
 import AccountButton from './src/pages/AccountButton';
 import DoctorDashboard from './src/pages/DoctorDashboard';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Added for checking JWT
 import { commonStyles, colors } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
@@ -41,15 +41,18 @@ export default function App() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [userName, setUserName] = useState('User');
 
-  // Effect to check authentication status and user role on app start
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const token = await AsyncStorage.getItem('jwt');
-      if (token) {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (data?.session) {
         setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
       }
     };
-    checkAuthStatus();
+
+      checkAuthStatus();
   }, []);
   
   const panResponderRef = useRef<any>(null);

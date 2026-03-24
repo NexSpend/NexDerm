@@ -5,11 +5,8 @@ from app.api.api_v1.endpoints import doctor_routes # Import the new doctor_route
 
 api_router = APIRouter()
 
-# routees to add later - auth, image, dermatalogists etc
-
-# Import and include other routers
 from app.api.api_v1.endpoints.general_routes import (
-    ping, report_route, user_history, users
+    ping, report_route, user_history, users, auth_routes
 )
 
 from app.api.api_v1.endpoints.model_endpoints import (
@@ -22,3 +19,4 @@ api_router.include_router(report_route.router)
 api_router.include_router(user_history.router)
 api_router.include_router(users.router)
 api_router.include_router(doctor_routes.router, prefix="/doctors", tags=["doctors"]) # Include the new doctor_routes
+api_router.include_router(auth_routes.router)

@@ -14,6 +14,9 @@ s3_service = S3Service()
 def get_latest_report(authorization: Optional[str] = Header(None)):
     user_id = get_current_user_id(authorization)
 
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     conn = get_connection()
     cursor = conn.cursor()
 

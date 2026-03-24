@@ -1,6 +1,7 @@
-from typing import Optional
-from supabase import create_client
+from typing import Any, Dict, Optional
+
 from fastapi import Header, HTTPException
+from supabase import create_client
 import os
 from dotenv import load_dotenv
 
@@ -38,7 +39,7 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     try:
         user_response = supabase.auth.get_user(token)
 
-        if not user_response.user:
+        if not user_response or not user_response.user:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
         return user_response.user.id
@@ -50,7 +51,25 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
-def get_optional_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
+def get_optional_current_user_id(
+    authorization: Optional[str] = Header(None),) -> Optional[str]:
+    token = _extract_bearer_token(authorization)
+
+    if not token:
+        return None
+
+    try:
+        user_response = supabase.auth.get_user(token)
+        if user_response and user_response.user:
+            return user_response.user.id
+        return None
+    except Exception as e:
+        print("OPTIONAL AUTH ERROR:", e)
+        return None
+
+
+def get_supabase_user(
+    authorization: Optional[str] = Header(None),) -> Optional[Dict[str, Any]]:
     token = _extract_bearer_token(authorization)
 
     if not token:
@@ -59,11 +78,23 @@ def get_optional_current_user_id(authorization: Optional[str] = Header(None)) ->
     try:
         user_response = supabase.auth.get_user(token)
 
-        if user_response.user:
-            return user_response.user.id
+        if not user_response or not user_response.user:
+            return None
 
-        return None
-
+        return {
+            "id": user_response.user.id,
+            "email": user_response.user.email,
+        }
     except Exception as e:
-        print("OPTIONAL AUTH ERROR:", e)
+        print("SUPABASE AUTH ERROR:", e)
         return None
+
+
+def require_supabase_user(
+    authorization: Optional[str] = Header(None),) -> Dict[str, Any]:
+    user = get_supabase_user(authorization)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    return user
