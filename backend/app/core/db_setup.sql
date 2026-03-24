@@ -6,6 +6,24 @@ CREATE TABLE public.users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE public."newUsers" (
+    id VARCHAR(255) PRIMARY KEY,
+    full_name VARCHAR(255),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'patient',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.reports (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    prediction VARCHAR(255),
+    confidence DECIMAL(5, 4),
+    report_s3_key VARCHAR(500),
+    report_file_name VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE public.classifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES public.users(id) ON DELETE SET NULL,
