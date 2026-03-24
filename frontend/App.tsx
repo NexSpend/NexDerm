@@ -158,11 +158,8 @@ export default function App() {
       setInferenceResult(result);
       setShowInference(true);
 
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to process image. Please try again."
-      );
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to process image");
       console.error(error);
     } finally {
       setIsLoading(false);
