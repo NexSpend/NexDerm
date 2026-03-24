@@ -120,7 +120,19 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     }
 
     await AsyncStorage.setItem('jwt', token);
-    onAuthSuccess();
+
+    const { data: userData, error: userError } = await supabase
+      .from('newUsers')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError) {
+      Alert.alert('Error', 'Failed to fetch user role.');
+      return;
+    }
+
+    onAuthSuccess(userData.role);
   };
 
   const handleForgotPassword = () => {

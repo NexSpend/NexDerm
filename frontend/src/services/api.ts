@@ -249,63 +249,95 @@ export interface PendingCase {
 
 /**
  * Fetches a list of pending cases that require a doctor's review.
- * Requires a JWT for authentication.
+ * Uses the current Supabase session access token for authentication.
  * @returns A promise that resolves to an array of PendingCase objects.
- * @throws Error if authentication token is not found or API call fails.
+ * @throws Error if the user is not authenticated or the API call fails.
  */
 export const getPendingCases = async (): Promise<PendingCase[]> => {
-    try {
-        const token = await AsyncStorage.getItem('jwt');
-        if (!token) throw new Error("Authentication token not found.");
-        // Make GET request to the backend /doctors/pending endpoint
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-        const response = await fetch(`${API_URL}/doctors/pending`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch pending cases (${response.status}): ${errorText}`);
-        } 
-
-        return (await response.json()) as PendingCase[];
-    } catch (error) {
-        console.error("Error fetching pending cases:", error);
-        throw error;
+    if (sessionError || !session) {
+      throw new Error('User not authenticated.');
     }
+
+    const token = session.access_token;
+
+    const response = await fetch(`${API_URL}/doctors/pending`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to fetch pending cases (${response.status}): ${errorText}`
+      );
+    }
+
+    return (await response.json()) as PendingCase[];
+  } catch (error) {
+    console.error('Error fetching pending cases:', error);
+    throw error;
+  }
 };
 
-export const submitDoctorReview = async (caseId: string, notes: string, diagnosis: string): Promise<any> => {
-    try {
-        const token = await AsyncStorage.getItem('jwt');
-        if (!token) throw new Error("Authentication token not found.");
+/**
+ * Submits a doctor's review for a specific case.
+ * Uses the current Supabase session access token for authentication.
+ * @param caseId The ID of the case being reviewed.
+ * @param notes The doctor's review notes.
+ * @param diagnosis The doctor's final diagnosis.
+ * @returns A promise that resolves to the API response.
+ * @throws Error if the user is not authenticated or the API call fails.
+ */
+export const submitDoctorReview = async (
+  caseId: string,
+  notes: string,
+  diagnosis: string
+): Promise<any> => {
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-        const body = JSON.stringify({
-            doctor_notes: notes,
-            final_diagnosis: diagnosis,
-        });
-
-        const response = await fetch(`${API_URL}/doctors/${caseId}/review`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: body,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to submit review (${response.status}): ${errorText}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error("Error submitting doctor review:", error);
-        throw error;
+    if (sessionError || !session) {
+      throw new Error('User not authenticated.');
     }
+
+    const token = session.access_token;
+
+    const body = JSON.stringify({
+      doctor_notes: notes,
+      final_diagnosis: diagnosis,
+    });
+
+    const response = await fetch(`${API_URL}/doctors/review/${caseId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to submit doctor review (${response.status}): ${errorText}`
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error submitting doctor review:', error);
+    throw error;
+  }
 };
