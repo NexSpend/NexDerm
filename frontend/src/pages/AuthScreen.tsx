@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -103,75 +102,55 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     setLoading(true);
 
-    // Step 1: Verify email + password with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoading(false);
-      Alert.alert('Sign In Failed', error.message);
-      return;
-    }
-
-    const token = data.session?.access_token;
-    if (!token) {
-      setLoading(false);
-      Alert.alert('Sign In Failed', 'Could not get a temporary session token.');
-      return;
-    }
-
-    // Step 2: Trigger backend OTP email (Resend)
-    let otpError: Error | null = null;
     try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        throw error;
+      }
+
+      const token = data.session?.access_token;
+      if (!token) {
+        throw new Error('Could not get a Supabase access token.');
+      }
+
       await sendOtpCode(email, token);
-    } catch (err: any) {
-      otpError = err;
+
+      setSupabaseToken(token);
+      setAwaitingOTP(true);
+    } catch (error: any) {
+      Alert.alert('Sign In Failed', error.message || 'Unable to sign in.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
-    if (otpError) {
-      Alert.alert('Failed to Send Code', otpError.message || 'Failed to send verification code.');
-      return;
-    }
-
-    // Step 3: Keep Supabase token temporarily until OTP verification is completed
-    setSupabaseToken(token);
-
-    // Step 4: Show OTP verification screen
-    setAwaitingOTP(true);
   };
 
   const handleResendOTP = async () => {
     try {
+      if (!supabaseToken) {
+        throw new Error('No active session token found.');
+      }
+
       await sendOtpCode(email, supabaseToken);
       Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
     } catch (error: any) {
       Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
     }
-
-    const token = data.session?.access_token;
-    if (!token) {
-      Alert.alert('Error', 'No access token found.');
-      return;
-    }
-
-    await AsyncStorage.setItem('jwt', token);
-
-    const { data: userData, error: userError } = await supabase
-      .from('newUsers')
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
-
-    if (userError) {
-      Alert.alert('Error', 'Failed to fetch user role.');
-      return;
-    }
-
-    onAuthSuccess(userData.role);
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert('Forgot Password', 'Password reset feature coming soon.');
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Enter Email', 'Please enter your email first.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      Alert.alert('Password Reset', 'Password reset instructions have been sent to your email.');
+    } catch (error: any) {
+      Alert.alert('Reset Failed', error.message || 'Could not send reset email.');
+    }
   };
 
   if (awaitingOTP) {
@@ -219,26 +198,37 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
         <Text style={commonStyles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignIn} disabled={loading}>
-        {loading
-          ? <ActivityIndicator color={colors.white} />
-          : <Text style={commonStyles.buttonText}>Login</Text>
-        }
+
+      <TouchableOpacity
+        style={commonStyles.primaryButton}
+        onPress={handleSignIn}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
 }
 
-// --- OTP Verification Screen (shown after successful password check) ---
 interface OTPVerificationFormProps {
   email: string;
   supabaseToken: string;
-  onAuthSuccess: () => void;
+  onAuthSuccess: (role: string) => void;
   onResend: () => Promise<void>;
   onBack: () => void;
 }
 
-function OTPVerificationForm({ email, supabaseToken, onAuthSuccess, onResend, onBack }: OTPVerificationFormProps) {
+function OTPVerificationForm({
+  email,
+  supabaseToken,
+  onAuthSuccess,
+  onResend,
+  onBack,
+}: OTPVerificationFormProps) {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -248,31 +238,50 @@ function OTPVerificationForm({ email, supabaseToken, onAuthSuccess, onResend, on
       Alert.alert('Invalid Code', 'Please enter the full 6-digit code.');
       return;
     }
+
     setLoading(true);
 
     try {
-      const result = supabaseToken
-        ? await verifyOtpCode(email, otp, supabaseToken)
-        : await verifyOtpCodePublic(email, otp);
-      await AsyncStorage.setItem('jwt', result.access_token);
-      if (result.expires_at) {
-        await AsyncStorage.setItem('jwt_expires_at', result.expires_at);
+      if (supabaseToken) {
+        await verifyOtpCode(email, otp, supabaseToken);
+      } else {
+        await verifyOtpCodePublic(email, otp);
       }
-      await supabase.auth.signOut();
-    } catch (error: any) {
-      setLoading(false);
-      Alert.alert('Verification Failed', error.message || 'Invalid verification code.');
-      return;
-    }
 
-    setLoading(false);
-    onAuthSuccess();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('Could not get the authenticated user after verification.');
+      }
+
+      const { data: userData, error: roleError } = await supabase
+        .from('newUsers')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (roleError) {
+        throw new Error('Failed to fetch user role.');
+      }
+
+      onAuthSuccess(userData.role);
+    } catch (error: any) {
+      Alert.alert('Verification Failed', error.message || 'Invalid verification code.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResend = async () => {
-    setResending(true);
-    await onResend();
-    setResending(false);
+    try {
+      setResending(true);
+      await onResend();
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -302,17 +311,23 @@ function OTPVerificationForm({ email, supabaseToken, onAuthSuccess, onResend, on
         onPress={handleVerify}
         disabled={loading}
       >
-        {loading
-          ? <ActivityIndicator color={colors.white} />
-          : <Text style={commonStyles.buttonText}>Verify Code</Text>
-        }
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Verify Code</Text>
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.resendButton} onPress={handleResend} disabled={resending}>
-        {resending
-          ? <ActivityIndicator size="small" color={colors.primary} />
-          : <Text style={commonStyles.linkText}>Resend Code</Text>
-        }
+      <TouchableOpacity
+        style={styles.resendButton}
+        onPress={handleResend}
+        disabled={resending}
+      >
+        {resending ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Text style={commonStyles.linkText}>Resend Code</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.otpBackButton} onPress={onBack}>
@@ -349,73 +364,93 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     setLoading(true);
 
-    // Step 1: Create auth account in Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name,
+          },
+        },
+      });
 
-    if (error) {
-      setLoading(false);
-      Alert.alert('Sign Up Failed', error.message);
-      return;
-    }
-    // Try to get a temporary session token to request an OTP
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+      if (error) {
+        throw error;
+      }
 
-    // Trigger OTP send via backend. If we don't have a session token (common
-    // after signUp), fall back to the public send endpoint which uses the
-    // server-side service role client to deliver the OTP.
-    if (token) {
-      try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token ?? '';
+
+      if (token) {
         await sendOtpCode(email, token);
         setSupabaseToken(token);
-        setAwaitingOTP(true);
-      } catch (err: any) {
-        setLoading(false);
-        Alert.alert('Failed to Send Code', err.message || 'Failed to send verification code.');
-        return;
-      }
-    } else {
-      try {
+      } else {
         await sendOtpCodePublic(email);
-        // no supabase token available; OTP verification will use public verify
         setSupabaseToken('');
-        setAwaitingOTP(true);
-      } catch (err: any) {
-        setLoading(false);
-        Alert.alert('Failed to Send Code', err.message || 'Failed to send verification code.');
-        return;
       }
-    }
 
-    setLoading(false);
+      setAwaitingOTP(true);
+    } catch (error: any) {
+      Alert.alert('Sign Up Failed', error.message || 'Unable to create account.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <View style={commonStyles.card}>
-      {awaitingOTP ? (
+  if (awaitingOTP) {
+    return (
+      <View style={commonStyles.card}>
         <OTPVerificationForm
           email={email}
           supabaseToken={supabaseToken}
-          onAuthSuccess={onAuthSuccess}
+          onAuthSuccess={async () => {
+            try {
+              const {
+                data: { user },
+                error: userError,
+              } = await supabase.auth.getUser();
+
+              if (userError || !user) {
+                throw new Error('Could not get the authenticated user.');
+              }
+
+              const { data: userData, error: roleError } = await supabase
+                .from('newUsers')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+              if (roleError) {
+                onAuthSuccess('user');
+                return;
+              }
+
+              onAuthSuccess(userData.role);
+            } catch {
+              onAuthSuccess('user');
+            }
+          }}
           onResend={async () => {
-                try {
-                  if (supabaseToken) {
-                    await sendOtpCode(email, supabaseToken);
-                  } else {
-                    await sendOtpCodePublic(email);
-                  }
-                  Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
-                } catch (err: any) {
-                  Alert.alert('Resend Failed', err.message || 'Failed to resend code.');
-                }
+            try {
+              if (supabaseToken) {
+                await sendOtpCode(email, supabaseToken);
+              } else {
+                await sendOtpCodePublic(email);
+              }
+              Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+            } catch (error: any) {
+              Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+            }
           }}
           onBack={() => setAwaitingOTP(false)}
         />
-      ) : (
-        <>
+      </View>
+    );
+  }
+
+  return (
+    <View style={commonStyles.card}>
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Full Name</Text>
         <TextInput
@@ -470,11 +505,18 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
           autoCorrect={false}
         />
       </View>
-          <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignUp} disabled={loading}>
-            {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Create Account</Text>}
-          </TouchableOpacity>
-        </>
-      )}
+
+      <TouchableOpacity
+        style={commonStyles.primaryButton}
+        onPress={handleSignUp}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Create Account</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -509,8 +551,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginBottom: 16,
   },
-
-  // OTP Verification Screen
   otpTitle: {
     fontSize: 20,
     fontWeight: '700',

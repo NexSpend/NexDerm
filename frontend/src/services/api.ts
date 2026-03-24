@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.108:8000/api/v1";
+export const API_URL = "http://10.0.0.193:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -113,7 +113,7 @@ export interface Dermatologist {
   longitude: number;
   specialties?: string;
   rating?: number;
-  distance?: number;   
+  distance?: number;
 }
 
 export const uploadImage = async (
@@ -325,10 +325,10 @@ export interface ProfileResponse {
  */
 
 export interface PendingCase {
-    id: string;
-    prediction: string;
-    confidence: number;
-    created_at: string;
+  id: string;
+  prediction: string;
+  confidence: number;
+  created_at: string;
 }
 
 /**

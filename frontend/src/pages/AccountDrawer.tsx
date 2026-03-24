@@ -10,12 +10,10 @@ import {
   Modal,
   Animated,
   Dimensions,
-  Platform,
   SafeAreaView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../utils/commonStyles';
-import { getUserInfo, getMedicalHistory } from '../services/api';
+import { getMedicalHistory } from '../services/api';
 import { supabase } from '../services/supabase';
 
 interface AccountDrawerProps {
@@ -78,43 +76,68 @@ export default function AccountDrawer({
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
-      const infoData = await getUserInfo();
-      setUserInfo(infoData);
 
-      const historyData = await getMedicalHistory();
-      setMedicalHistory(historyData);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (user) {
+        setUserInfo({
+          email: user.email ?? '',
+          firstName: user.user_metadata?.first_name ?? user.user_metadata?.firstName,
+          lastName: user.user_metadata?.last_name ?? user.user_metadata?.lastName,
+          age: user.user_metadata?.age,
+          gender: user.user_metadata?.gender,
+          phone: user.user_metadata?.phone,
+        });
+      } else {
+        setUserInfo(null);
+      }
+
+      try {
+        const historyData = await getMedicalHistory();
+        setMedicalHistory(Array.isArray(historyData) ? historyData : []);
+      } catch (historyError) {
+        console.error('Failed to load medical history:', historyError);
+        setMedicalHistory([]);
+      }
     } catch (error) {
       console.error('Failed to load account data:', error);
+      setUserInfo(null);
+      setMedicalHistory([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', onPress: () => {} },
-        {
-          text: 'Sign Out',
-          onPress: async () => {
-            try {
-              const { error } = await supabase.auth.signOut();
-              if (error) throw error;
-
-              await AsyncStorage.removeItem('jwt');
-              onClose();
-              onSignOut();
-              Alert.alert('Success', 'Signed out successfully');
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out');
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              throw error;
             }
-          },
+
+            onClose();
+            onSignOut();
+            Alert.alert('Success', 'Signed out successfully');
+          } catch (error) {
+            console.error('Sign out error:', error);
+            Alert.alert('Error', 'Failed to sign out');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -124,160 +147,164 @@ export default function AccountDrawer({
       animationType="none"
       onRequestClose={onClose}
     >
-      {/* Overlay */}
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      />
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-      {/* Drawer */}
-      <Animated.View
-        style={[
-          styles.drawer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Account</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
+        <Animated.View
+          style={[
+            styles.drawer,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Account</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Navigation Buttons */}
-          <View style={styles.navButtonContainer}>
-            <TouchableOpacity
-              style={[styles.navButton, activeTab === 'info' && styles.navButtonActive]}
-              onPress={() => {
-                setActiveTab('info');
-                onShowProfile?.();
-              }}
-            >
-              <Text
-                style={[
-                  styles.navButtonText,
-                  activeTab === 'info' && styles.navButtonTextActive,
-                ]}
+            <View style={styles.navButtonContainer}>
+              <TouchableOpacity
+                style={[styles.navButton, activeTab === 'info' && styles.navButtonActive]}
+                onPress={() => {
+                  setActiveTab('info');
+                  onShowProfile?.();
+                }}
               >
-                👤 Profile
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.navButton, activeTab === 'history' && styles.navButtonActive]}
-              onPress={() => {
-                setActiveTab('history');
-                onShowHistory?.();
-              }}
-            >
-              <Text
-                style={[
-                  styles.navButtonText,
-                  activeTab === 'history' && styles.navButtonTextActive,
-                ]}
+                <Text
+                  style={[
+                    styles.navButtonText,
+                    activeTab === 'info' && styles.navButtonTextActive,
+                  ]}
+                >
+                  👤 Profile
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.navButton, activeTab === 'history' && styles.navButtonActive]}
+                onPress={() => {
+                  setActiveTab('history');
+                  onShowHistory?.();
+                }}
               >
-                📋 History
-              </Text>
+                <Text
+                  style={[
+                    styles.navButtonText,
+                    activeTab === 'history' && styles.navButtonTextActive,
+                  ]}
+                >
+                  📋 History
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+            >
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : activeTab === 'info' ? (
+                <View style={styles.infoContainer}>
+                  {userInfo ? (
+                    <>
+                      <View style={styles.infoCard}>
+                        <Text style={styles.label}>Email</Text>
+                        <Text style={styles.value}>{userInfo.email}</Text>
+                      </View>
+
+                      {userInfo.firstName ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.label}>First Name</Text>
+                          <Text style={styles.value}>{userInfo.firstName}</Text>
+                        </View>
+                      ) : null}
+
+                      {userInfo.lastName ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.label}>Last Name</Text>
+                          <Text style={styles.value}>{userInfo.lastName}</Text>
+                        </View>
+                      ) : null}
+
+                      {userInfo.age ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.label}>Age</Text>
+                          <Text style={styles.value}>{userInfo.age}</Text>
+                        </View>
+                      ) : null}
+
+                      {userInfo.gender ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.label}>Gender</Text>
+                          <Text style={styles.value}>{userInfo.gender}</Text>
+                        </View>
+                      ) : null}
+
+                      {userInfo.phone ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.label}>Phone</Text>
+                          <Text style={styles.value}>{userInfo.phone}</Text>
+                        </View>
+                      ) : null}
+                    </>
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>No user information available</Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.historyContainer}>
+                  {medicalHistory.length > 0 ? (
+                    medicalHistory.map((item) => (
+                      <View key={item.id} style={styles.historyCard}>
+                        <Text style={styles.historyDate}>{item.date}</Text>
+                        <Text style={styles.historyDiagnosis}>{item.diagnosis}</Text>
+                        <Text style={styles.historyConfidence}>
+                          {(item.confidence * 100).toFixed(1)}%
+                        </Text>
+                        {item.notes ? (
+                          <Text style={styles.historyNotes}>{item.notes}</Text>
+                        ) : null}
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>No medical history yet</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.signOutButton}
+              onPress={handleSignOut}
+            >
+              <Text style={styles.signOutText}>Sign Out</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            ) : activeTab === 'info' ? (
-              <View style={styles.infoContainer}>
-                {userInfo && (
-                  <>
-                    <View style={styles.infoCard}>
-                      <Text style={styles.label}>Email</Text>
-                      <Text style={styles.value}>{userInfo.email}</Text>
-                    </View>
-
-                    {userInfo.firstName && (
-                      <View style={styles.infoCard}>
-                        <Text style={styles.label}>First Name</Text>
-                        <Text style={styles.value}>{userInfo.firstName}</Text>
-                      </View>
-                    )}
-
-                    {userInfo.lastName && (
-                      <View style={styles.infoCard}>
-                        <Text style={styles.label}>Last Name</Text>
-                        <Text style={styles.value}>{userInfo.lastName}</Text>
-                      </View>
-                    )}
-
-                    {userInfo.age && (
-                      <View style={styles.infoCard}>
-                        <Text style={styles.label}>Age</Text>
-                        <Text style={styles.value}>{userInfo.age}</Text>
-                      </View>
-                    )}
-
-                    {userInfo.gender && (
-                      <View style={styles.infoCard}>
-                        <Text style={styles.label}>Gender</Text>
-                        <Text style={styles.value}>{userInfo.gender}</Text>
-                      </View>
-                    )}
-
-                    {userInfo.phone && (
-                      <View style={styles.infoCard}>
-                        <Text style={styles.label}>Phone</Text>
-                        <Text style={styles.value}>{userInfo.phone}</Text>
-                      </View>
-                    )}
-                  </>
-                )}
-              </View>
-            ) : (
-              <View style={styles.historyContainer}>
-                {medicalHistory.length > 0 ? (
-                  medicalHistory.map((item) => (
-                    <View key={item.id} style={styles.historyCard}>
-                      <Text style={styles.historyDate}>{item.date}</Text>
-                      <Text style={styles.historyDiagnosis}>{item.diagnosis}</Text>
-                      <Text style={styles.historyConfidence}>
-                        {(item.confidence * 100).toFixed(1)}%
-                      </Text>
-                      {item.notes && (
-                        <Text style={styles.historyNotes}>{item.notes}</Text>
-                      )}
-                    </View>
-                  ))
-                ) : (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No medical history yet</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Footer Sign Out Button */}
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={handleSignOut}
-          >
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </SafeAreaView>
-      </Animated.View>
+          </SafeAreaView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalContainer: {
     flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   drawer: {
