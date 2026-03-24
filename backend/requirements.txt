@@ -19,8 +19,5 @@ torch
 torchvision
 boto3
 reportlab
-<<<<<<< HEAD
 transformers
-=======
 resend
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
