@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from supabase import create_client
 from fastapi import Header, HTTPException
-from fastapi import Header
 from jose import jwt, JWTError
 import os
 from dotenv import load_dotenv
@@ -65,10 +64,11 @@ def get_optional_current_user_id(authorization: Optional[str] = Header(None)) ->
 
     try:
         user_response = supabase.auth.get_user(token)
-
         if user_response.user:
             return user_response.user.id
-
+    
+    except Exception as e:
+        print("OPTIONAL AUTH ERROR:", e)
         return None
 
 
@@ -87,8 +87,6 @@ def get_supabase_user(authorization: Optional[str] = Header(None)) -> Optional[D
             "email": user_response.user.email,
         }
     except Exception as e:
-        print("OPTIONAL AUTH ERROR:", e)
-        return None
         print("SUPABASE AUTH ERROR:", e)
         return None
 

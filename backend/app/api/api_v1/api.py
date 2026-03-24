@@ -6,8 +6,7 @@ from app.api.api_v1.endpoints import doctor_routes # Import the new doctor_route
 api_router = APIRouter()
 
 from app.api.api_v1.endpoints.general_routes import (
-    ping, report_route, user_history, users
-    ping, report_route, auth_routes
+    ping, report_route, user_history, users, auth_routes
 )
 
 from app.api.api_v1.endpoints.model_endpoints import (
