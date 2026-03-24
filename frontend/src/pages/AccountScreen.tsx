@@ -9,9 +9,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, colors } from '../utils/commonStyles';
-import { getUserInfo, getMedicalHistory } from '../services/api';
+import { getMedicalHistory } from '../services/api';
 import { supabase } from '../services/supabase';
 
 interface AccountScreenProps {
@@ -44,14 +43,43 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
-      const infoData = await getUserInfo();
-      setUserInfo(infoData);
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (user) {
+        const fullName =
+          user.user_metadata?.full_name ||
+          [
+            user.user_metadata?.first_name,
+            user.user_metadata?.last_name,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .trim() ||
+          'Not provided';
+
+        setUserInfo({
+          email: user.email ?? 'No email available',
+          full_name: fullName,
+        });
+      } else {
+        setUserInfo(null);
+      }
 
       const historyData = await getMedicalHistory();
-      setMedicalHistory(historyData);
+      setMedicalHistory(Array.isArray(historyData) ? historyData : []);
     } catch (error) {
       console.error('Failed to load account data:', error);
       Alert.alert('Error', 'Failed to load account information');
+      setUserInfo(null);
+      setMedicalHistory([]);
     } finally {
       setIsLoading(false);
     }
@@ -67,14 +95,9 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
           text: 'Sign Out',
           onPress: async () => {
             try {
-              // Sign out from Supabase
               const { error } = await supabase.auth.signOut();
               if (error) throw error;
 
-              // Clear JWT token
-              await AsyncStorage.removeItem('jwt');
-              
-              // Go back to auth screen
               onBackToMain();
               Alert.alert('Success', 'Signed out successfully');
             } catch (error) {
@@ -90,7 +113,7 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
   return (
     <SafeAreaView style={commonStyles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={onBackToMain}
         >
@@ -99,7 +122,6 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
         <Text style={styles.headerTitle}>Account</Text>
       </View>
 
-      {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'info' && styles.tabActive]}
@@ -119,7 +141,6 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
@@ -127,7 +148,7 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
           </View>
         ) : activeTab === 'info' ? (
           <View style={styles.infoContainer}>
-            {userInfo && (
+            {userInfo ? (
               <>
                 <View style={styles.infoCard}>
                   <Text style={styles.label}>Email</Text>
@@ -139,6 +160,10 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
                   <Text style={styles.value}>{userInfo.full_name}</Text>
                 </View>
               </>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No account information available</Text>
+              </View>
             )}
           </View>
         ) : (
@@ -151,9 +176,9 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
                   <Text style={styles.historyConfidence}>
                     Confidence: {(item.confidence * 100).toFixed(1)}%
                   </Text>
-                  {item.notes && (
+                  {item.notes ? (
                     <Text style={styles.historyNotes}>{item.notes}</Text>
-                  )}
+                  ) : null}
                 </View>
               ))
             ) : (
@@ -165,7 +190,6 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
         )}
       </ScrollView>
 
-      {/* Sign Out Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.signOutButton}
