@@ -12,6 +12,7 @@ import { commonStyles, colors } from '../utils/commonStyles';
 import { getMedicalHistory } from '../services/api';
 
 interface HistoryPageProps {
+  isGuest: boolean;
   onBackToAccount: () => void;
 }
 
@@ -23,16 +24,33 @@ type MedicalHistoryItem = {
   created_at: string | null;
 };
 
-export default function HistoryPage({ onBackToAccount }: HistoryPageProps) {
+export default function HistoryPage({
+  isGuest,
+  onBackToAccount,
+}: HistoryPageProps) {
   const [history, setHistory] = useState<MedicalHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isGuest) {
+      setHistory([]);
+      setErrorMessage(null);
+      setLoading(false);
+      return;
+    }
+
     loadHistory();
-  }, []);
+  }, [isGuest]);
 
   const loadHistory = async () => {
+    if (isGuest) {
+      setHistory([]);
+      setErrorMessage(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setErrorMessage(null);
@@ -88,6 +106,14 @@ export default function HistoryPage({ onBackToAccount }: HistoryPageProps) {
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.statusText}>Loading history...</Text>
+          </View>
+        ) : isGuest ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.placeholderText}>🔒</Text>
+            <Text style={styles.placeholderTitle}>History is unavailable in guest mode</Text>
+            <Text style={styles.placeholderSubtitle}>
+              Sign up or log in to save and view past reports
+            </Text>
           </View>
         ) : errorMessage ? (
           <View style={styles.centerContent}>

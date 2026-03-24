@@ -11,7 +11,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from "react-native";
-import { supabase } from './src/services/supabase'; // adjust path
+import { supabase } from './src/services/supabase';
 import * as ImagePicker from "expo-image-picker";
 import AuthScreen from './src/pages/AuthScreen';
 import InferencePage from './src/pages/InferencePage';
@@ -22,11 +22,10 @@ import HistoryPage from './src/pages/HistoryPage';
 import ChangePasswordPage from './src/pages/ChangePasswordPage';
 import AccountButton from './src/pages/AccountButton';
 import DoctorDashboard from './src/pages/DoctorDashboard';
-import { commonStyles, colors } from './src/utils/commonStyles';
+import { commonStyles } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
 
-// All the imports
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,34 +39,92 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [userName, setUserName] = useState('User');
+  const [showDermatologistMap, setShowDermatologistMap] = useState(false);
 
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (data?.session) {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    };
-
-      checkAuthStatus();
-  }, []);
-  
   const panResponderRef = useRef<any>(null);
 
-  // Handle back to signup with state reset
-  const handleBackToSignup = () => {
-    setIsAuthenticated(false);
-    setIsGuest(false);
-    setImage(null);
-    setUserRole(null);
-    setInferenceResult(null);
+  useEffect(() => {
+    // IMPORTANT:
+    // Do not auto-log the user into the app just because Supabase has a session.
+    // Otherwise signInWithPassword() will bypass your custom OTP/MFA step.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        setIsGuest(false);
+        setUserRole(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const resetNavigationState = () => {
+    setShowAccount(false);
+    setShowProfile(false);
+    setShowHistory(false);
+    setShowChangePassword(false);
+    setShowDermatologistMap(false);
     setShowInference(false);
+    setImage(null);
+    setInferenceResult(null);
+    setUserRole(null);
   };
 
-  // Initialize swipe gesture recognizer
+  const handleBackToSignup = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+
+    setIsAuthenticated(false);
+    setIsGuest(false);
+    resetNavigationState();
+  };
+
+  const handleGoToAuthPage = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+
+    setIsAuthenticated(false);
+    setIsGuest(false);
+    resetNavigationState();
+  };
+
+  const handleGuestBlockedFeature = (featureName: string) => {
+    Alert.alert(
+      'Sign Up Required',
+      `Please sign up or log in to access ${featureName}.`
+    );
+  };
+
+  const handleShowProfile = () => {
+    if (isGuest) {
+      handleGuestBlockedFeature('your profile');
+      return;
+    }
+
+    setShowAccount(false);
+    setShowProfile(true);
+  };
+
+  const handleShowHistory = () => {
+    if (isGuest) {
+      handleGuestBlockedFeature('your history');
+      return;
+    }
+
+    setShowAccount(false);
+    setShowHistory(true);
+  };
+
   const createSwipeGestureHandler = () => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -78,8 +135,7 @@ export default function App() {
       ) => {
         const swipeThreshold = 50;
         const swipeVelocity = 0.5;
-        
-        // Detect right swipe
+
         if (
           gestureState.dx > swipeThreshold &&
           gestureState.vx > swipeVelocity
@@ -90,14 +146,11 @@ export default function App() {
     });
   };
 
-  // Initialize swipe responder only once
   useEffect(() => {
     if (!panResponderRef.current) {
       panResponderRef.current = createSwipeGestureHandler();
     }
   }, []);
-  const [showDermatologistMap, setShowDermatologistMap] = useState(false);
-
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -105,7 +158,7 @@ export default function App() {
       Alert.alert("Permission Denied", "Please allow photo access to upload.");
       return;
     }
-// Launches expo's image picker
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -132,7 +185,7 @@ export default function App() {
 
     if (!result.canceled) setImage(result.assets[0].uri);
   };
-// Handles the image upload and inference process
+
   const handleStartDetection = async () => {
     if (!image) {
       Alert.alert("No Image", "Please upload an image first.");
@@ -142,16 +195,13 @@ export default function App() {
     try {
       setIsLoading(true);
 
-      const MIN_TIME = 2500; // 2.5 seconds minimum
+      const MIN_TIME = 2500;
       const start = Date.now();
       const predictionPromise = uploadImage(image);
 
-      // Wait for backend result
       const result = await predictionPromise;
-
       const elapsed = Date.now() - start;
 
-      // If backend was too fast, wait extra time
       if (elapsed < MIN_TIME) {
         await new Promise((resolve) =>
           setTimeout(resolve, MIN_TIME - elapsed)
@@ -160,7 +210,6 @@ export default function App() {
 
       setInferenceResult(result);
       setShowInference(true);
-
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to process image");
       console.error(error);
@@ -175,38 +224,44 @@ export default function App() {
     setInferenceResult(null);
   };
 
-  const handleFindDermatologists = async () => {
-    Alert.alert(
-      "Find Dermatologists",
-      "This feature will show nearby dermatologists. Coming soon!"
-    );
-  };
-
   if (!isAuthenticated && !isGuest) {
     return (
-      <AuthScreen 
+      <AuthScreen
         onAuthSuccess={(role) => {
-      setIsAuthenticated(true);
+          setIsAuthenticated(true);
+          setIsGuest(false);
           setUserRole(role);
         }}
-        onGuestContinue={() => setIsGuest(true)}
+        onGuestContinue={() => {
+          setIsGuest(true);
+          setIsAuthenticated(false);
+          setUserRole(null);
+        }}
       />
     );
   }
+
   if (showProfile) {
     return (
       <ProfilePage
+        isGuest={isGuest}
         onBackToAccount={() => {
           setShowProfile(false);
           setShowAccount(true);
         }}
         onShowChangePassword={() => {
+          if (isGuest) {
+            handleGuestBlockedFeature('password settings');
+            return;
+          }
+
           setShowProfile(false);
           setShowChangePassword(true);
         }}
       />
     );
   }
+
   if (showChangePassword) {
     return (
       <ChangePasswordPage
@@ -217,56 +272,47 @@ export default function App() {
       />
     );
   }
+
   if (showHistory) {
     return (
       <HistoryPage
+        isGuest={isGuest}
         onBackToAccount={() => {
           setShowHistory(false);
-
-          // 🔑 Reset everything else
-          setShowAccount(false);
-          setShowProfile(false);
-          setShowInference(false);
-          setShowDermatologistMap(false);
-
-          // (optional but clean)
-          setImage(null);
-          setInferenceResult(null);
+          setShowAccount(true);
         }}
       />
     );
   }
 
-  if (isAuthenticated && userRole === 'doctor') { // Conditional rendering for Doctor Portal
+  if (isAuthenticated && userRole === 'doctor') {
     return (
-      <DoctorDashboard 
-        onLogout={handleBackToSignup} 
+      <DoctorDashboard
+        onLogout={handleBackToSignup}
       />
     );
   }
 
-
   if (isLoading) {
     return (
       <>
-        <LoadingScreen onAccountPress={() => setShowAccount(true)} userName={userName} />
+        <LoadingScreen
+          onAccountPress={() => setShowAccount(true)}
+          userName={userName}
+        />
         <AccountDrawer
           isVisible={showAccount}
           onClose={() => setShowAccount(false)}
           onSignOut={handleBackToSignup}
-          onShowProfile={() => {
-            setShowAccount(false);
-            setShowProfile(true);
-          }}
-          onShowHistory={() => {
-            setShowAccount(false);
-            setShowHistory(true);
-          }}
+          onShowProfile={handleShowProfile}
+          onShowHistory={handleShowHistory}
+          isGuest={isGuest}
+          onGoToAuthPage={handleGoToAuthPage}
         />
       </>
     );
   }
-  
+
   if (showDermatologistMap) {
     return (
       <>
@@ -278,32 +324,24 @@ export default function App() {
           isVisible={showAccount}
           onClose={() => setShowAccount(false)}
           onSignOut={handleBackToSignup}
-          onShowProfile={() => {
-            setShowAccount(false);
-            setShowProfile(true);
-          }}
-          onShowHistory={() => {
-            setShowAccount(false);
-            setShowHistory(true);
-          }}
+          onShowProfile={handleShowProfile}
+          onShowHistory={handleShowHistory}
+          isGuest={isGuest}
+          onGoToAuthPage={handleGoToAuthPage}
         />
       </>
     );
   }
+
   if (showInference && image && inferenceResult) {
     return (
       <>
         <InferencePage
           imageUri={image}
           result={inferenceResult}
-          onShowProfile={() => {
-            setShowAccount(false);
-            setShowProfile(true);
-          }}
-          onShowHistory={() => {
-            setShowAccount(false);
-            setShowHistory(true);
-          }}
+          isGuest={isGuest}
+          onShowProfile={handleShowProfile}
+          onShowHistory={handleShowHistory}
           onFindDermatologists={() => setShowDermatologistMap(true)}
           onBackToUpload={handleBackToUpload}
           onAccountPress={() => setShowAccount(true)}
@@ -312,36 +350,31 @@ export default function App() {
           isVisible={showAccount}
           onClose={() => setShowAccount(false)}
           onSignOut={handleBackToSignup}
-          onShowProfile={() => {
-            setShowAccount(false);
-            setShowProfile(true);
-          }}
-          onShowHistory={() => {
-            setShowAccount(false);
-            setShowHistory(true);
-          }}
+          onShowProfile={handleShowProfile}
+          onShowHistory={handleShowHistory}
+          isGuest={isGuest}
+          onGoToAuthPage={handleGoToAuthPage}
         />
       </>
     );
   }
 
-  // Main upload screen
   return (
     <>
-      <SafeAreaView 
+      <SafeAreaView
         style={commonStyles.container}
         {...(panResponderRef.current?.panHandlers || {})}
       >
-        {/* Account Button */}
-        <AccountButton onPress={() => setShowAccount(true)} userName={userName} />
-        
-        {/* HEADER */}
+        <AccountButton
+          onPress={() => setShowAccount(true)}
+          userName={userName}
+        />
+
         <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
         </View>
 
-        {/* BODY */}
         <View style={commonStyles.body}>
           <View style={[commonStyles.imageBox, commonStyles.imageBoxDashed]}>
             {image ? (
@@ -351,51 +384,50 @@ export default function App() {
             )}
           </View>
 
-          <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
+          <TouchableOpacity
+            style={commonStyles.primaryButton}
+            onPress={pickImage}
+          >
             <Text style={commonStyles.buttonText}>
               {image ? "Change Image" : "Upload Image"}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
-            <Text style={commonStyles.buttonText}>
-              Take a Photo
-            </Text>
+          <TouchableOpacity
+            style={[commonStyles.primaryButton, { marginTop: 12 }]}
+            onPress={takePhoto}
+          >
+            <Text style={commonStyles.buttonText}>Take a Photo</Text>
           </TouchableOpacity>
 
           {image && (
-            <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
+            <TouchableOpacity
+              style={commonStyles.secondaryButton}
+              onPress={handleStartDetection}
+            >
               <Text style={commonStyles.buttonText}>Start Detection</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* FOOTER */}
         <View style={commonStyles.footer}>
           <Text style={commonStyles.disclaimer}>
             ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
           </Text>
         </View>
       </SafeAreaView>
-      
-      {/* Account Drawer Overlay */}
+
       <AccountDrawer
         isVisible={showAccount}
         onClose={() => setShowAccount(false)}
         onSignOut={handleBackToSignup}
-        onShowProfile={() => {
-          setShowAccount(false);
-          setShowProfile(true);
-        }}
-        onShowHistory={() => {
-          setShowAccount(false);
-          setShowHistory(true);
-        }}
+        onShowProfile={handleShowProfile}
+        onShowHistory={handleShowHistory}
+        isGuest={isGuest}
+        onGoToAuthPage={handleGoToAuthPage}
       />
     </>
   );
 }
 
-// Styles for the upload screen
 const styles = StyleSheet.create({});
-
