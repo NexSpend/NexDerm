@@ -10,9 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
-import { getUserInfo } from '../services/api';
+import { supabase } from '../services/supabase';
 
 interface ProfilePageProps {
+  isGuest: boolean;
   onBackToAccount: () => void;
   onShowChangePassword: () => void;
 }
@@ -23,6 +24,7 @@ interface UserInfo {
 }
 
 export default function ProfilePage({
+  isGuest,
   onBackToAccount,
   onShowChangePassword,
 }: ProfilePageProps) {
@@ -30,14 +32,47 @@ export default function ProfilePage({
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isGuest) {
+      Alert.alert('Sign Up Required', 'Please sign up or log in to access your profile.');
+      onBackToAccount();
+      return;
+    }
+
     loadUserInfo();
-  }, []);
+  }, [isGuest]);
 
   const loadUserInfo = async () => {
     try {
-      const data = await getUserInfo();
-      console.log('USER INFO:', data);  
-      setUserInfo(data);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!user) {
+        setUserInfo(null);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('newUsers')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const fullName = profileData?.full_name || 'N/A';
+
+      setUserInfo({
+        full_name: fullName,
+        email: user.email || 'N/A',
+      });
     } catch (error) {
       console.error('Failed to load user info:', error);
       Alert.alert('Error', 'Failed to load profile information');
@@ -46,7 +81,6 @@ export default function ProfilePage({
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBackToAccount}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -54,14 +88,11 @@ export default function ProfilePage({
 
         <Text style={styles.headerTitle}>Profile</Text>
 
-        {/* Empty view to keep header spacing balanced */}
         <View style={styles.headerRightPlaceholder} />
       </View>
 
-      {/* CONTENT */}
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileContainer}>
-          {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
               {profileImage ? (
@@ -74,7 +105,6 @@ export default function ProfilePage({
             </View>
           </View>
 
-          {/* View-Only Fields */}
           <View style={styles.fieldsSection}>
             <Text style={styles.sectionTitle}>Personal Information</Text>
 
@@ -97,7 +127,6 @@ export default function ProfilePage({
             </View>
           </View>
 
-          {/* Change Password Button */}
           <TouchableOpacity
             style={styles.changePasswordButton}
             onPress={onShowChangePassword}
@@ -131,7 +160,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   headerRightPlaceholder: {
     width: 50,
@@ -186,7 +215,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   fieldInput: {
     backgroundColor: colors.cardBackground,
@@ -201,7 +230,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   changePasswordButton: {
     backgroundColor: colors.primary,

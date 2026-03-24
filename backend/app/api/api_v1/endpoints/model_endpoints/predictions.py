@@ -8,7 +8,6 @@ from PIL import Image
 from app.services.model_service import model_service
 from app.services.report_service import generate_report
 from app.services.auth_service import get_optional_current_user_id
-from app.services.auth_service import get_current_user_id
 from app.services.s3_service import S3Service
 from app.services.pdf_service import generate_prediction_report_pdf
 from ..dataBase_endpoints.dataBase_connection import get_connection
@@ -29,32 +28,37 @@ async def classify_image(
     try:
         print("STEP 0: start endpoint")
 
-        user_id = get_current_user_id(authorization)
+        # Make auth optional so guests can still use prediction
+        user_id = None
+        try:
+            if authorization and authorization.strip():
+                user_id = get_optional_current_user_id(authorization)
+        except Exception as auth_error:
+            print("OPTIONAL AUTH ERROR:", str(auth_error))
+            user_id = None
+
         print("STEP 1: user_id =", user_id)
 
         image_bytes = await file.read()
         print("STEP 2: image read, bytes =", len(image_bytes))
 
-        # --- NEW: Convert bytes to PIL Image ---
         try:
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid image file uploaded.")
 
-        # --- NEW: Run the smart prediction (CLIP Filter + Ensemble) ---
-        # Assuming model_service now exposes the `smart_predict` method
         result = model_service.smart_predict(image)
-        
-        # --- NEW: Check if the image is actually skin ---
+
         if not result.get("is_skin", True):
             print("STEP 2.5: Image rejected by skin filter.")
-            # Return a 400 Bad Request to stop execution and alert the frontend
             raise HTTPException(
-                status_code=400, 
-                detail=result.get("message", "Please provide a clear, close-up image of the affected skin area.")
+                status_code=400,
+                detail=result.get(
+                    "message",
+                    "Please provide a clear, close-up image of the affected skin area."
+                )
             )
 
-        # Extract prediction and confidence from the dictionary
         label = result["prediction"]
         confidence = result["confidence"]
         print("STEP 3: prediction done =", label, confidence)
@@ -67,7 +71,7 @@ async def classify_image(
 
         # Guest user -> only return prediction, no PDF/report storage
         if not user_id:
-            print("STEP 4: guest user detected, skipping PDF generation and DB storage")
+            print("STEP 4: guest or invalid token detected, skipping PDF generation and DB storage")
             return response
 
         report_text = generate_report(label, confidence)
