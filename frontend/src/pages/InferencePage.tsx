@@ -10,9 +10,7 @@ import {
   Image,
   ScrollView,
   Alert,
-  Linking,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { getLatestReport } from '../services/api';
 import AccountButton from './AccountButton';
@@ -24,9 +22,11 @@ interface BackendResult {
   description?: string;
   severity?: string;
 }
+
 interface InferencePageProps {
   imageUri: string;
   result: BackendResult;
+  isGuest: boolean;
   onFindDermatologists?: () => void;
   onBackToUpload: () => void;
   onAccountPress?: () => void;
@@ -38,16 +38,15 @@ interface InferencePageProps {
 export default function InferencePage({
   imageUri,
   result,
+  isGuest,
   onFindDermatologists,
   onBackToUpload,
   onAccountPress,
   userName = 'User',
 }: InferencePageProps) {
-  // Normalize confidence to 0–100
   const confidencePercent =
     result.confidence <= 1 ? result.confidence * 100 : result.confidence;
 
-  // Thi will derive a simple severity label if backend didn't send one
   const severity =
     result.severity ||
     (confidencePercent >= 80
@@ -68,19 +67,26 @@ export default function InferencePage({
   const descriptionText =
     result.description ||
     'No detailed description is available. Please consult a dermatologist for further evaluation.';
-  
+
   const handleDownloadLatestReport = async () => {
+    if (isGuest) {
+      Alert.alert(
+        'Sign Up Required',
+        'Sign up or log in in order to download reports.'
+      );
+      return;
+    }
+
     try {
       const data = await getLatestReport();
 
       if (!data.download_url) {
-        Alert.alert("Error", "No report available.");
+        Alert.alert('Error', 'No report available.');
         return;
       }
 
       const fileUri =
-        FileSystem.documentDirectory +
-        `nexderm-report-${Date.now()}.pdf`;
+        FileSystem.documentDirectory + `nexderm-report-${Date.now()}.pdf`;
 
       const downloadResult = await FileSystem.downloadAsync(
         data.download_url,
@@ -91,47 +97,40 @@ export default function InferencePage({
 
       if (canShare) {
         await Sharing.shareAsync(downloadResult.uri, {
-          mimeType: "application/pdf",
-          dialogTitle: "Download NexDerm Report",
-          UTI: "com.adobe.pdf",
+          mimeType: 'application/pdf',
+          dialogTitle: 'Download NexDerm Report',
+          UTI: 'com.adobe.pdf',
         });
       } else {
-        Alert.alert("Success", "Report downloaded.");
+        Alert.alert('Success', 'Report downloaded.');
       }
-
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to download report.");
+      Alert.alert('Error', 'Failed to download report.');
     }
   };
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {/* Account Button */}
       {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
-      
-      {/* HEADER */}
+
       <View style={commonStyles.header}>
         <Text style={commonStyles.title}>🩺 NexDerm</Text>
         <Text style={commonStyles.subtitle}>Detection Results</Text>
       </View>
 
-      {/* BODY */}
       <ScrollView contentContainerStyle={commonStyles.scrollContent}>
         <View style={[commonStyles.body, styles.bodyPadding]}>
-          {/* Image Preview */}
           <View style={commonStyles.imageBox}>
             <Image source={{ uri: imageUri }} style={commonStyles.previewImage} />
           </View>
 
-          {/* Results Card */}
           <View style={commonStyles.cardWide}>
             <Text style={commonStyles.sectionLabel}>Detected Condition</Text>
             <Text style={styles.conditionName}>
               {result.prediction || 'Unknown Condition'}
             </Text>
 
-            {/* Confidence Score */}
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>Confidence</Text>
               <View style={styles.confidenceBar}>
@@ -147,7 +146,6 @@ export default function InferencePage({
               </Text>
             </View>
 
-            {/* Severity */}
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>Risk Level</Text>
               <View style={styles.severityBadge}>
@@ -155,13 +153,11 @@ export default function InferencePage({
               </View>
             </View>
 
-            {/* Description */}
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>About this condition</Text>
               <Text style={styles.description}>{descriptionText}</Text>
             </View>
 
-            {/* Recommendations */}
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>Recommendations</Text>
               {recommendationsArray.length > 0 ? (
@@ -182,19 +178,25 @@ export default function InferencePage({
               )}
             </View>
           </View>
-       
-    
-          {/* Buttons */}
 
           <TouchableOpacity
-            style={[commonStyles.primaryButton, styles.buttonFull]}
+            style={[
+              commonStyles.primaryButton,
+              styles.buttonFull,
+              isGuest && styles.disabledDownloadButton,
+            ]}
             onPress={handleDownloadLatestReport}
           >
-            <Text style={commonStyles.buttonText}>
+            <Text
+              style={[
+                commonStyles.buttonText,
+                isGuest && styles.disabledDownloadButtonText,
+              ]}
+            >
               📄 Download Latest Report PDF
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[commonStyles.secondaryButton, styles.buttonFull]}
             onPress={onFindDermatologists}
@@ -215,7 +217,6 @@ export default function InferencePage({
         </View>
       </ScrollView>
 
-      {/* FOOTER */}
       <View style={commonStyles.footer}>
         <Text style={commonStyles.disclaimer}>
           ⚠️ Disclaimer: This is an AI prediction. Please consult a medical
@@ -226,7 +227,6 @@ export default function InferencePage({
   );
 }
 
-// Page specific for only InferencePage styles
 const styles = StyleSheet.create({
   bodyPadding: {
     paddingVertical: 20,
@@ -298,5 +298,11 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     marginTop: 0,
     marginBottom: 12,
+  },
+  disabledDownloadButton: {
+    backgroundColor: '#BDBDBD',
+  },
+  disabledDownloadButtonText: {
+    color: '#F5F5F5',
   },
 });

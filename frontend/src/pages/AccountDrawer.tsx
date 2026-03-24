@@ -22,6 +22,8 @@ interface AccountDrawerProps {
   onSignOut: () => void;
   onShowProfile?: () => void;
   onShowHistory?: () => void;
+  isGuest: boolean;
+  onGoToAuthPage: () => void;
 }
 
 interface UserInfo {
@@ -49,6 +51,8 @@ export default function AccountDrawer({
   onSignOut,
   onShowProfile,
   onShowHistory,
+  isGuest,
+  onGoToAuthPage,
 }: AccountDrawerProps) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistoryItem[]>([]);
@@ -76,6 +80,13 @@ export default function AccountDrawer({
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
+
+      if (isGuest) {
+        setUserInfo(null);
+        setMedicalHistory([]);
+        setActiveTab('info');
+        return;
+      }
 
       const {
         data: { user },
@@ -140,6 +151,43 @@ export default function AccountDrawer({
     ]);
   };
 
+  const handleGuestBlockedPress = (featureName: string) => {
+    Alert.alert(
+      'Sign Up Required',
+      `Please sign up or log in to access ${featureName}.`
+    );
+  };
+
+  const handleProfilePress = () => {
+    if (isGuest) {
+      handleGuestBlockedPress('your profile');
+      return;
+    }
+
+    setActiveTab('info');
+    onShowProfile?.();
+  };
+
+  const handleHistoryPress = () => {
+    if (isGuest) {
+      handleGuestBlockedPress('your history');
+      return;
+    }
+
+    setActiveTab('history');
+    onShowHistory?.();
+  };
+
+  const handleBottomButtonPress = () => {
+    if (isGuest) {
+      onClose();
+      onGoToAuthPage();
+      return;
+    }
+
+    handleSignOut();
+  };
+
   return (
     <Modal
       visible={isVisible}
@@ -170,16 +218,18 @@ export default function AccountDrawer({
 
             <View style={styles.navButtonContainer}>
               <TouchableOpacity
-                style={[styles.navButton, activeTab === 'info' && styles.navButtonActive]}
-                onPress={() => {
-                  setActiveTab('info');
-                  onShowProfile?.();
-                }}
+                style={[
+                  styles.navButton,
+                  activeTab === 'info' && !isGuest && styles.navButtonActive,
+                  isGuest && styles.disabledButton,
+                ]}
+                onPress={handleProfilePress}
               >
                 <Text
                   style={[
                     styles.navButtonText,
-                    activeTab === 'info' && styles.navButtonTextActive,
+                    activeTab === 'info' && !isGuest && styles.navButtonTextActive,
+                    isGuest && styles.disabledButtonText,
                   ]}
                 >
                   👤 Profile
@@ -187,16 +237,18 @@ export default function AccountDrawer({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.navButton, activeTab === 'history' && styles.navButtonActive]}
-                onPress={() => {
-                  setActiveTab('history');
-                  onShowHistory?.();
-                }}
+                style={[
+                  styles.navButton,
+                  activeTab === 'history' && !isGuest && styles.navButtonActive,
+                  isGuest && styles.disabledButton,
+                ]}
+                onPress={handleHistoryPress}
               >
                 <Text
                   style={[
                     styles.navButtonText,
-                    activeTab === 'history' && styles.navButtonTextActive,
+                    activeTab === 'history' && !isGuest && styles.navButtonTextActive,
+                    isGuest && styles.disabledButtonText,
                   ]}
                 >
                   📋 History
@@ -208,7 +260,13 @@ export default function AccountDrawer({
               style={styles.content}
               showsVerticalScrollIndicator={false}
             >
-              {isLoading ? (
+              {isGuest ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
+                    Sign up or log in to view your profile and history.
+                  </Text>
+                </View>
+              ) : isLoading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
                 </View>
@@ -287,10 +345,15 @@ export default function AccountDrawer({
             </ScrollView>
 
             <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={handleSignOut}
+              style={[
+                styles.signOutButton,
+                isGuest && styles.goToAuthButton,
+              ]}
+              onPress={handleBottomButtonPress}
             >
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <Text style={styles.signOutText}>
+                {isGuest ? 'Go to Sign In / Sign Up' : 'Sign Out'}
+              </Text>
             </TouchableOpacity>
           </SafeAreaView>
         </Animated.View>
@@ -377,6 +440,13 @@ const styles = StyleSheet.create({
   navButtonTextActive: {
     color: colors.white,
   },
+  disabledButton: {
+    backgroundColor: '#E0E0E0',
+    borderColor: '#D0D0D0',
+  },
+  disabledButtonText: {
+    color: '#888888',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
@@ -450,10 +520,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 200,
+    paddingHorizontal: 12,
   },
   emptyText: {
     fontSize: 14,
     color: colors.textSecondary,
+    textAlign: 'center',
   },
   signOutButton: {
     backgroundColor: colors.errorText,
@@ -462,6 +534,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     alignItems: 'center',
+  },
+  goToAuthButton: {
+    backgroundColor: colors.primary,
   },
   signOutText: {
     fontSize: 18,
