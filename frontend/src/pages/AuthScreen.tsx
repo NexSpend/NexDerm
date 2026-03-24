@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
-import { sendOtpCode, sendOtpCodePublic, verifyOtpCode, verifyOtpCodePublic } from '../services/api';
+import { sendOtpCode, sendOtpCodePublic, verifyOtpCode, verifyOtpCodePublic, registerUser } from '../services/api';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -232,6 +232,21 @@ function OTPVerificationForm({
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(60);
+
+  // Start cooldown timer on component mount
+  useEffect(() => {
+    setResendCooldown(60);
+  }, []);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => {
+      setResendCooldown(resendCooldown - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
@@ -263,11 +278,9 @@ function OTPVerificationForm({
         .eq('id', user.id)
         .single();
 
-      if (roleError) {
-        throw new Error('Failed to fetch user role.');
-      }
-
-      onAuthSuccess(userData.role);
+      // If role doesn't exist or there's an error, default to 'patient'
+      const userRole = !roleError && userData?.role ? userData.role : 'patient';
+      onAuthSuccess(userRole);
     } catch (error: any) {
       Alert.alert('Verification Failed', error.message || 'Invalid verification code.');
     } finally {
@@ -279,6 +292,8 @@ function OTPVerificationForm({
     try {
       setResending(true);
       await onResend();
+      // Start 60-second cooldown after successful resend
+      setResendCooldown(60);
     } finally {
       setResending(false);
     }
@@ -319,12 +334,16 @@ function OTPVerificationForm({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.resendButton}
+        style={[styles.resendButton, resendCooldown > 0 && styles.resendButtonDisabled]}
         onPress={handleResend}
-        disabled={resending}
+        disabled={resending || resendCooldown > 0}
       >
         {resending ? (
           <ActivityIndicator size="small" color={colors.primary} />
+        ) : resendCooldown > 0 ? (
+          <Text style={styles.resendCountdownText}>
+            Resend in {resendCooldown}s
+          </Text>
         ) : (
           <Text style={commonStyles.linkText}>Resend Code</Text>
         )}
@@ -400,52 +419,53 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
   if (awaitingOTP) {
     return (
-      <View style={commonStyles.card}>
-        <OTPVerificationForm
-          email={email}
-          supabaseToken={supabaseToken}
-          onAuthSuccess={async () => {
-            try {
-              const {
-                data: { user },
-                error: userError,
-              } = await supabase.auth.getUser();
+      <OTPVerificationForm
+        email={email}
+        supabaseToken={supabaseToken}
+        onAuthSuccess={async () => {
+          try {
+            const {
+              data: { user },
+              error: userError,
+            } = await supabase.auth.getUser();
 
-              if (userError || !user) {
-                throw new Error('Could not get the authenticated user.');
-              }
-
-              const { data: userData, error: roleError } = await supabase
-                .from('newUsers')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-
-              if (roleError) {
-                onAuthSuccess('user');
-                return;
-              }
-
-              onAuthSuccess(userData.role);
-            } catch {
-              onAuthSuccess('user');
+            if (userError || !user) {
+              throw new Error('Could not get the authenticated user.');
             }
-          }}
-          onResend={async () => {
-            try {
-              if (supabaseToken) {
-                await sendOtpCode(email, supabaseToken);
-              } else {
-                await sendOtpCodePublic(email);
+
+            // Register user in database if we have token
+            if (supabaseToken) {
+              try {
+                console.log('Attempting to register user:', { full_name, email: user.email || email, user_id: user.id });
+                const regResult = await registerUser(full_name, user.email || email, user.id, supabaseToken, 'patient');
+                console.log('User registration successful:', regResult);
+              } catch (regError) {
+                console.error('Registration error:', regError);
+                // Continue even if registration fails - predictions endpoint has defensive registration
               }
-              Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
-            } catch (error: any) {
-              Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
             }
-          }}
-          onBack={() => setAwaitingOTP(false)}
-        />
-      </View>
+
+            onAuthSuccess('patient');
+          } catch (error: any) {
+            console.error('Error:', error);
+            // Still login the user even if there's an error
+            onAuthSuccess('patient');
+          }
+        }}
+        onResend={async () => {
+          try {
+            if (supabaseToken) {
+              await sendOtpCode(email, supabaseToken);
+            } else {
+              await sendOtpCodePublic(email);
+            }
+            Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+          } catch (error: any) {
+            Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+          }
+        }}
+        onBack={() => setAwaitingOTP(false)}
+      />
     );
   }
 
@@ -580,6 +600,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
     paddingVertical: 8,
+  },
+  resendButtonDisabled: {
+    opacity: 0.6,
+  },
+  resendCountdownText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   otpBackButton: {
     alignItems: 'center',

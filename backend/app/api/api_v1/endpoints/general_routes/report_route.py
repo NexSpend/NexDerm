@@ -10,6 +10,30 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 s3_service = S3Service()
 
 
+@router.get("/download", summary="Generate a presigned URL to download a report from S3")
+def download_report(s3_key: str, authorization: Optional[str] = Header(None)):
+    """Generate a presigned download URL for a report from S3 using the s3_key.
+    This allows downloading reports even before they're saved to the database."""
+    user_id = get_current_user_id(authorization)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not s3_key:
+        raise HTTPException(status_code=400, detail="s3_key parameter is required")
+
+    try:
+        # Generate presigned URL for the S3 key
+        download_url = s3_service.generate_presigned_download_url(s3_key)
+        
+        return {
+            "s3_key": s3_key,
+            "download_url": download_url
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {str(e)}")
+
+
 @router.get("/latest", summary="Get the latest report for the logged-in user")
 def get_latest_report(authorization: Optional[str] = Header(None)):
     user_id = get_current_user_id(authorization)

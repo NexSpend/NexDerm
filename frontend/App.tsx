@@ -351,20 +351,20 @@ export default function App() {
             )}
           </View>
 
-          <TouchableOpacity style={commonStyles.primaryButton} onPress={pickImage}>
+          <TouchableOpacity style={[commonStyles.primaryButton, styles.uploadButton]} onPress={pickImage}>
             <Text style={commonStyles.buttonText}>
               {image ? "Change Image" : "Upload Image"}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[commonStyles.primaryButton, { marginTop: 12 }]} onPress={takePhoto}>
+          <TouchableOpacity style={[commonStyles.primaryButton, styles.uploadButton]} onPress={takePhoto}>
             <Text style={commonStyles.buttonText}>
               Take a Photo
             </Text>
           </TouchableOpacity>
 
           {image && (
-            <TouchableOpacity style={commonStyles.secondaryButton} onPress={handleStartDetection}>
+            <TouchableOpacity style={[commonStyles.secondaryButton, styles.uploadButton]} onPress={handleStartDetection}>
               <Text style={commonStyles.buttonText}>Start Detection</Text>
             </TouchableOpacity>
           )}
@@ -397,5 +397,10 @@ export default function App() {
 }
 
 // Styles for the upload screen
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  uploadButton: {
+    width: 280,
+    marginBottom: 12,
+  },
+});
 

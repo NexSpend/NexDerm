@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { commonStyles, colors } from '../utils/commonStyles';
-import { getLatestReport } from '../services/api';
+import { getLatestReport, API_URL } from '../services/api';
+import { supabase } from '../services/supabase';
 import AccountButton from './AccountButton';
 
 interface BackendResult {
@@ -23,6 +24,8 @@ interface BackendResult {
   recommendations?: string | string[];
   description?: string;
   severity?: string;
+  s3_key?: string; // Direct S3 key for downloading PDF
+  report_id?: string;
 }
 interface InferencePageProps {
   imageUri: string;
@@ -71,7 +74,39 @@ export default function InferencePage({
   
   const handleDownloadLatestReport = async () => {
     try {
-      const data = await getLatestReport();
+      let data;
+      
+      // If we have an s3_key from the prediction result, use it directly
+      if (result.s3_key) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const token = session?.access_token;
+        if (!token) {
+          throw new Error('No logged-in user');
+        }
+
+        const response = await fetch(
+          `${API_URL}/reports/download?s3_key=${encodeURIComponent(result.s3_key)}`,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to get download URL');
+        }
+
+        data = await response.json();
+      } else {
+        // Fall back to fetching latest report from database
+        data = await getLatestReport();
+      }
 
       if (!data.download_url) {
         Alert.alert("Error", "No report available.");

@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://10.0.0.193:8000/api/v1";
+export const API_URL = "http://192.168.2.108:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -87,6 +87,34 @@ export const verifyOtpCodePublic = async (
   }
 
   return (await response.json()) as VerifyOtpResponse;
+};
+
+export const registerUser = async (
+  fullName: string,
+  email: string,
+  userId: string,
+  supabaseToken: string,
+  role: string = 'patient'
+): Promise<void> => {
+  const response = await fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${supabaseToken}`,
+    },
+    body: JSON.stringify({
+      full_name: fullName,
+      email,
+      user_id: userId,
+      role,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to register user (${response.status}): ${text}`);
+  }
 };
 
 import { Alert, Linking } from 'react-native';
@@ -242,29 +270,21 @@ export const getLatestReport = async (): Promise<LatestReportResponse> => {
 
 export const getUserInfo = async () => {
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  const token = session?.access_token;
-
-  if (!token) {
-    throw new Error('No logged-in user');
+  if (error || !user) {
+    throw new Error('Failed to get user information');
   }
 
-  const response = await fetch(`${API_URL}/users/info`, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || 'Failed to fetch user info');
-  }
-
-  return response.json();
+  // Get full name from user metadata
+  const full_name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+  
+  return {
+    full_name,
+    email: user.email,
+  };
 };
 
 export const getMedicalHistory = async () => {

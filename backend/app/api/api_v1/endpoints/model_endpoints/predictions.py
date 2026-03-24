@@ -88,25 +88,33 @@ async def classify_image(
         s3_key = f"reports/{user_id}/{report_id}/report.pdf"
         s3_service.upload_pdf_bytes(pdf_bytes, s3_key)
         print("STEP 8: PDF uploaded to S3, key =", s3_key)
+        
+        # Include S3 key and report_id in response for direct download
+        response["report_id"] = str(report_id)
+        response["s3_key"] = s3_key
 
-        conn = get_connection()
-        cursor = conn.cursor()
-        print("STEP 9: DB connection opened")
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            print("STEP 9: DB connection opened")
 
-        cursor.execute(
-            """
-            INSERT INTO reports (id, user_id, prediction, confidence, report_s3_key, report_file_name)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id;
-            """,
-            (report_id, user_id, label, confidence, s3_key, "report.pdf")
-        )
+            cursor.execute(
+                """
+                INSERT INTO reports (id, user_id, prediction, confidence, report_s3_key, report_file_name)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (report_id, user_id, label, confidence, s3_key, "report.pdf")
+            )
 
-        saved_report_id = cursor.fetchone()[0]
-        conn.commit()
-        print("STEP 10: DB insert committed, saved_report_id =", saved_report_id)
+            saved_report_id = cursor.fetchone()[0]
+            conn.commit()
+            print("STEP 10: DB insert committed, saved_report_id =", saved_report_id)
+        except Exception as db_error:
+            print("STEP 9: Warning - could not save report to database:", str(db_error))
+            print("Report PDF still available at S3:", s3_key)
+            # Continue without storing in database - PDF is preserved in S3
 
-        response["report_id"] = str(saved_report_id)
         return response
 
     except HTTPException:
