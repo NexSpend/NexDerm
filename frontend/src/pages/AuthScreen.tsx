@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
+import { sendOtpCode, sendOtpCodePublic, verifyOtpCode, verifyOtpCodePublic } from '../services/api';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -91,6 +91,8 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [awaitingOTP, setAwaitingOTP] = useState(false);
+  const [supabaseToken, setSupabaseToken] = useState('');
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -100,44 +102,68 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    setLoading(false);
+      if (error) {
+        throw error;
+      }
 
-    if (error) {
+      const token = data.session?.access_token;
+      if (!token) {
+        throw new Error('Could not get a Supabase access token.');
+      }
+
+      await sendOtpCode(email, token);
+
+      setSupabaseToken(token);
+      setAwaitingOTP(true);
+    } catch (error: any) {
+      Alert.alert('Sign In Failed', error.message || 'Unable to sign in.');
+    } finally {
       setLoading(false);
-      Alert.alert('Sign In Failed', error.message);
-      return;
     }
-
-    const token = data.session?.access_token;
-    if (!token) {
-      Alert.alert('Error', 'No access token found.');
-      return;
-    }
-
-    await AsyncStorage.setItem('jwt', token);
-
-    const { data: userData, error: userError } = await supabase
-      .from('newUsers')
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
-
-    if (userError) {
-      Alert.alert('Error', 'Failed to fetch user role.');
-      return;
-    }
-
-    onAuthSuccess(userData.role);
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert('Forgot Password', 'Password reset feature coming soon.');
+  const handleResendOTP = async () => {
+    try {
+      if (!supabaseToken) {
+        throw new Error('No active session token found.');
+      }
+
+      await sendOtpCode(email, supabaseToken);
+      Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+    } catch (error: any) {
+      Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+    }
   };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Enter Email', 'Please enter your email first.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      Alert.alert('Password Reset', 'Password reset instructions have been sent to your email.');
+    } catch (error: any) {
+      Alert.alert('Reset Failed', error.message || 'Could not send reset email.');
+    }
+  };
+
+  if (awaitingOTP) {
+    return (
+      <OTPVerificationForm
+        email={email}
+        supabaseToken={supabaseToken}
+        onAuthSuccess={onAuthSuccess}
+        onResend={handleResendOTP}
+        onBack={() => setAwaitingOTP(false)}
+      />
+    );
+  }
 
   return (
     <View style={commonStyles.card}>
@@ -188,12 +214,137 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
   );
 }
 
+interface OTPVerificationFormProps {
+  email: string;
+  supabaseToken: string;
+  onAuthSuccess: (role: string) => void;
+  onResend: () => Promise<void>;
+  onBack: () => void;
+}
+
+function OTPVerificationForm({
+  email,
+  supabaseToken,
+  onAuthSuccess,
+  onResend,
+  onBack,
+}: OTPVerificationFormProps) {
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter the full 6-digit code.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (supabaseToken) {
+        await verifyOtpCode(email, otp, supabaseToken);
+      } else {
+        await verifyOtpCodePublic(email, otp);
+      }
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('Could not get the authenticated user after verification.');
+      }
+
+      const { data: userData, error: roleError } = await supabase
+        .from('newUsers')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (roleError) {
+        throw new Error('Failed to fetch user role.');
+      }
+
+      onAuthSuccess(userData.role);
+    } catch (error: any) {
+      Alert.alert('Verification Failed', error.message || 'Invalid verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      setResending(true);
+      await onResend();
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <View style={commonStyles.card}>
+      <Text style={styles.otpTitle}>Check Your Email</Text>
+      <Text style={styles.otpSubtitle}>
+        {'We sent a 6-digit code to\n'}
+        <Text style={styles.otpEmail}>{email}</Text>
+      </Text>
+
+      <View style={commonStyles.inputGroup}>
+        <Text style={commonStyles.inputLabel}>Verification Code</Text>
+        <TextInput
+          style={[commonStyles.textInput, styles.otpInput]}
+          placeholder="000000"
+          placeholderTextColor={colors.textPlaceholder}
+          value={otp}
+          onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          maxLength={6}
+          autoCorrect={false}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={commonStyles.primaryButton}
+        onPress={handleVerify}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={commonStyles.buttonText}>Verify Code</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.resendButton}
+        onPress={handleResend}
+        disabled={resending}
+      >
+        {resending ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Text style={commonStyles.linkText}>Resend Code</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.otpBackButton} onPress={onBack}>
+        <Text style={styles.otpBackText}>← Back to Login</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [awaitingOTP, setAwaitingOTP] = useState(false);
+  const [supabaseToken, setSupabaseToken] = useState('');
 
   const handleSignUp = async () => {
     if (!full_name || !email || !password || !confirmPassword) {
@@ -213,63 +364,90 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     setLoading(true);
 
-    // Step 1: Create auth account in Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      setLoading(false);
-      Alert.alert('Sign Up Failed', error.message);
-      return;
-    }
-
-    const supabaseUserId = data.user?.id;
-
-    if (!supabaseUserId) {
-      setLoading(false);
-      Alert.alert('Sign Up Failed', 'User account created, but no user ID was returned.');
-      return;
-    }
-
-    // Step 2: Insert profile into your own table
-    const { error: dbError } = await supabase.from('newUsers').insert([
-      {
-        id: supabaseUserId,
-        full_name,
+    try {
+      const { error } = await supabase.auth.signUp({
         email,
-        role: 'user',
-      },
-    ]);
+        password,
+        options: {
+          data: {
+            full_name,
+          },
+        },
+      });
 
-    setLoading(false);
+      if (error) {
+        throw error;
+      }
 
-    if (dbError) {
-      Alert.alert(
-        'Warning',
-        `Account created but profile save failed: ${dbError.message}`
-      );
-      return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token ?? '';
+
+      if (token) {
+        await sendOtpCode(email, token);
+        setSupabaseToken(token);
+      } else {
+        await sendOtpCodePublic(email);
+        setSupabaseToken('');
+      }
+
+      setAwaitingOTP(true);
+    } catch (error: any) {
+      Alert.alert('Sign Up Failed', error.message || 'Unable to create account.');
+    } finally {
+      setLoading(false);
     }
-
-    // If email confirmation is enabled, session may be null here
-    if (!data.session) {
-      Alert.alert(
-        'Account Created!',
-        'Please check your email and verify your account before signing in.'
-      );
-      return;
-    }
-
-    // If a session exists immediately, save JWT and log in
-    const token = data.session.access_token;
-    await AsyncStorage.setItem('jwt', token);
-
-    Alert.alert('Account Created!', 'Your account has been created successfully.', [
-      { text: 'OK', onPress: onAuthSuccess },
-    ]);
   };
+
+  if (awaitingOTP) {
+    return (
+      <View style={commonStyles.card}>
+        <OTPVerificationForm
+          email={email}
+          supabaseToken={supabaseToken}
+          onAuthSuccess={async () => {
+            try {
+              const {
+                data: { user },
+                error: userError,
+              } = await supabase.auth.getUser();
+
+              if (userError || !user) {
+                throw new Error('Could not get the authenticated user.');
+              }
+
+              const { data: userData, error: roleError } = await supabase
+                .from('newUsers')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+              if (roleError) {
+                onAuthSuccess('user');
+                return;
+              }
+
+              onAuthSuccess(userData.role);
+            } catch {
+              onAuthSuccess('user');
+            }
+          }}
+          onResend={async () => {
+            try {
+              if (supabaseToken) {
+                await sendOtpCode(email, supabaseToken);
+              } else {
+                await sendOtpCodePublic(email);
+              }
+              Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+            } catch (error: any) {
+              Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
+            }
+          }}
+          onBack={() => setAwaitingOTP(false)}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={commonStyles.card}>
@@ -372,5 +550,45 @@ const styles = StyleSheet.create({
   forgotPasswordButton: {
     alignSelf: 'flex-end',
     marginBottom: 16,
+  },
+  otpTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  otpSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  otpEmail: {
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  otpInput: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 10,
+    textAlign: 'center',
+    paddingVertical: 14,
+  },
+  resendButton: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 8,
+  },
+  otpBackButton: {
+    alignItems: 'center',
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  otpBackText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });

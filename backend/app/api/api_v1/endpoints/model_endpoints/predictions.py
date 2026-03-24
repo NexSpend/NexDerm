@@ -8,6 +8,7 @@ from PIL import Image
 from app.services.model_service import model_service
 from app.services.report_service import generate_report
 from app.services.auth_service import get_optional_current_user_id
+from app.services.auth_service import get_current_user_id
 from app.services.s3_service import S3Service
 from app.services.pdf_service import generate_prediction_report_pdf
 from ..dataBase_endpoints.dataBase_connection import get_connection
@@ -28,7 +29,7 @@ async def classify_image(
     try:
         print("STEP 0: start endpoint")
 
-        user_id = get_optional_current_user_id(authorization)
+        user_id = get_current_user_id(authorization)
         print("STEP 1: user_id =", user_id)
 
         image_bytes = await file.read()
