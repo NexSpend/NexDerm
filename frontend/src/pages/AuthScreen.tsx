@@ -103,24 +103,12 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
     setLoading(true);
 
-<<<<<<< HEAD
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setLoading(false);
-
-=======
     // Step 1: Verify email + password with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
     if (error) {
       setLoading(false);
       Alert.alert('Sign In Failed', error.message);
       return;
-<<<<<<< HEAD
-=======
     }
 
     const token = data.session?.access_token;
@@ -158,7 +146,6 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
     } catch (error: any) {
       Alert.alert('Resend Failed', error.message || 'Failed to resend code.');
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
     }
 
     const token = data.session?.access_token;
@@ -232,19 +219,6 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
         <Text style={commonStyles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
-<<<<<<< HEAD
-
-      <TouchableOpacity
-        style={commonStyles.primaryButton}
-        onPress={handleSignIn}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={commonStyles.buttonText}>Login</Text>
-        )}
-=======
       <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignIn} disabled={loading}>
         {loading
           ? <ActivityIndicator color={colors.white} />
@@ -343,7 +317,6 @@ function OTPVerificationForm({ email, supabaseToken, onAuthSuccess, onResend, on
 
       <TouchableOpacity style={styles.otpBackButton} onPress={onBack}>
         <Text style={styles.otpBackText}>← Back to Login</Text>
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
       </TouchableOpacity>
     </View>
   );
@@ -387,53 +360,6 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       Alert.alert('Sign Up Failed', error.message);
       return;
     }
-<<<<<<< HEAD
-
-    const supabaseUserId = data.user?.id;
-
-    if (!supabaseUserId) {
-      setLoading(false);
-      Alert.alert('Sign Up Failed', 'User account created, but no user ID was returned.');
-      return;
-    }
-
-    // Step 2: Insert profile into your own table
-    const { error: dbError } = await supabase.from('newUsers').insert([
-      {
-        id: supabaseUserId,
-        full_name,
-        email,
-        role: 'user',
-      },
-    ]);
-
-    setLoading(false);
-
-    if (dbError) {
-      Alert.alert(
-        'Warning',
-        `Account created but profile save failed: ${dbError.message}`
-      );
-      return;
-    }
-
-    // If email confirmation is enabled, session may be null here
-    if (!data.session) {
-      Alert.alert(
-        'Account Created!',
-        'Please check your email and verify your account before signing in.'
-      );
-      return;
-    }
-
-    // If a session exists immediately, save JWT and log in
-    const token = data.session.access_token;
-    await AsyncStorage.setItem('jwt', token);
-
-    Alert.alert('Account Created!', 'Your account has been created successfully.', [
-      { text: 'OK', onPress: onAuthSuccess },
-    ]);
-=======
     // Try to get a temporary session token to request an OTP
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -465,7 +391,6 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     }
 
     setLoading(false);
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
   };
 
   return (
@@ -545,26 +470,11 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
           autoCorrect={false}
         />
       </View>
-<<<<<<< HEAD
-
-      <TouchableOpacity
-        style={commonStyles.primaryButton}
-        onPress={handleSignUp}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={commonStyles.buttonText}>Create Account</Text>
-        )}
-      </TouchableOpacity>
-=======
           <TouchableOpacity style={commonStyles.primaryButton} onPress={handleSignUp} disabled={loading}>
             {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.buttonText}>Create Account</Text>}
           </TouchableOpacity>
         </>
       )}
->>>>>>> e1fdbb7 (added the 2FA for sign in, not sure about sin up*)
     </View>
   );
 }
