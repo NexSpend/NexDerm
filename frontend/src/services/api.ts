@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://10.0.0.193:8000/api/v1";
+export const API_URL = "http://192.168.2.145:8000/api/v1";
 
 import { Alert, Linking } from 'react-native';
 
@@ -63,8 +63,8 @@ export const uploadImage = async (
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Upload failed (${response.status}): ${text}`);
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to process image. Please try again.");
     }
 
     return (await response.json()) as PredictionResponse;
