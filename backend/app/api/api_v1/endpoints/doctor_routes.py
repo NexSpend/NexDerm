@@ -36,10 +36,17 @@ async def get_pending_cases(
 
         cursor.execute(
             """
-            SELECT id, prediction, confidence, created_at 
-            FROM reports 
-            WHERE status = 'Pending'
-            ORDER BY created_at DESC;
+            SELECT 
+                r.id, 
+                r.prediction, 
+                r.confidence, 
+                r.created_at,
+                u.full_name,
+                u.email
+            FROM reports r
+            LEFT JOIN "newUsers" u ON r.user_id = u.id
+            WHERE r.status = 'Pending'
+            ORDER BY r.created_at DESC;
             """
         )
         
@@ -52,6 +59,8 @@ async def get_pending_cases(
                 "prediction": row[1],
                 "confidence": row[2],
                 "created_at": row[3],
+                "user_name": row[4],
+                "user_email": row[5],
             }
             for row in pending_cases
         ]
