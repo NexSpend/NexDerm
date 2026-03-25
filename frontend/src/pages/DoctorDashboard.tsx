@@ -67,7 +67,11 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
   const filteredCases = pendingCases.filter(
     (item) =>
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.prediction.toLowerCase().includes(searchQuery.toLowerCase())
+      item.prediction.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.user_name &&
+        item.user_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.user_email &&
+        item.user_email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Render the CaseReviewScreen if a case is selected
@@ -105,7 +109,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
             borderRadius: 8,
             marginBottom: 15,
           }}
-          placeholder="Search by ID or Diagnosis..."
+          placeholder="Search by Name, Email, or Diagnosis..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -126,7 +130,10 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                 style={commonStyles.caseCard}
                 onPress={() => setSelectedCase(item)} // Set selected case on tap
               >
-                <Text style={commonStyles.caseCardTitle}>Case ID: {item.id.substring(0, 8)}...</Text>
+                <Text style={commonStyles.caseCardTitle}>{item.user_name || 'N/A'}</Text>
+                <Text style={commonStyles.caseCardText}>
+                  {item.user_email || 'N/A'}
+                </Text>
                 <Text style={commonStyles.caseCardText}>
                   AI Prediction: {item.prediction}
                 </Text>
