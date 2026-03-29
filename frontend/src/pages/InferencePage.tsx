@@ -114,12 +114,12 @@ export default function InferencePage({
     <SafeAreaView style={commonStyles.container}>
       {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
 
-      <View style={commonStyles.header}>
-        <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>Detection Results</Text>
-      </View>
+      <ScrollView contentContainerStyle={[commonStyles.scrollContent, styles.pageScrollContent]}>
+        <View style={commonStyles.header}>
+          <Text style={commonStyles.title}>🩺 NexDerm</Text>
+          <Text style={commonStyles.subtitle}>Detection Results</Text>
+        </View>
 
-      <ScrollView contentContainerStyle={commonStyles.scrollContent}>
         <View style={[commonStyles.body, styles.bodyPadding]}>
           <View style={commonStyles.imageBox}>
             <Image source={{ uri: imageUri }} style={commonStyles.previewImage} />
@@ -215,19 +215,22 @@ export default function InferencePage({
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      <View style={commonStyles.footer}>
-        <Text style={commonStyles.disclaimer}>
-          ⚠️ Disclaimer: This is an AI prediction. Please consult a medical
-          professional for diagnosis.
-        </Text>
-      </View>
+        <View style={commonStyles.footer}>
+          <Text style={commonStyles.disclaimer}>
+            ⚠️ Disclaimer: This is an AI prediction. Please consult a medical
+            professional for diagnosis.
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  pageScrollContent: {
+    paddingBottom: 12,
+  },
   bodyPadding: {
     paddingVertical: 20,
   },
