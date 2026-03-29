@@ -284,33 +284,34 @@ export default function DermatologistMapScreen({
     <SafeAreaView style={commonStyles.container}>
       {/* Account Button */}
       {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
-      
-      {/* HEADER */}
-      <View style={commonStyles.header}>
-        <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>Nearby dermatologists</Text>
-      </View>
 
-      {/* MAP */}
-      <View style={styles.mapContainer}>
-        <WebView
-          source={{ html: htmlContent }}
-          style={styles.map}
-          onMessage={(event) => {
-            try {
-              const message = JSON.parse(event.nativeEvent.data);
-              if (message.type === 'DERMATOLOGISTS') {
-                setTopDermatologists(message.data);
+      <ScrollView style={styles.pageScroll} contentContainerStyle={styles.pageContent}>
+        {/* HEADER */}
+        <View style={commonStyles.header}>
+          <Text style={commonStyles.title}>🩺 NexDerm</Text>
+          <Text style={commonStyles.subtitle}>Nearby dermatologists</Text>
+        </View>
+
+        {/* MAP */}
+        <View style={styles.mapContainer}>
+          <WebView
+            source={{ html: htmlContent }}
+            style={styles.map}
+            onMessage={(event) => {
+              try {
+                const message = JSON.parse(event.nativeEvent.data);
+                if (message.type === 'DERMATOLOGISTS') {
+                  setTopDermatologists(message.data);
+                }
+              } catch (error) {
+                console.error('Error parsing message:', error);
               }
-            } catch (error) {
-              console.error('Error parsing message:', error);
-            }
-          }}
-        />
-      </View>
+            }}
+          />
+        </View>
 
-      {/* TOP 3 DERMATOLOGISTS */}
-      <ScrollView style={styles.listContainer} contentContainerStyle={styles.listContent}>
+        {/* TOP 3 DERMATOLOGISTS */}
+        <View style={styles.listContainer}>
         <View style={styles.listHeader}>
           <View style={styles.listHeaderTopRow}>
             <View>
@@ -359,20 +360,27 @@ export default function DermatologistMapScreen({
         ) : (
           <Text style={styles.noResultsText}>No nearby dermatologists found yet.</Text>
         )}
-      </ScrollView>
+        </View>
 
-      {/* FOOTER BUTTON */}
-      <TouchableOpacity
-        style={[commonStyles.primaryButton, styles.backButton]}
-        onPress={onBackToResults}
-      >
-        <Text style={commonStyles.buttonText}>← Back to Results</Text>
-      </TouchableOpacity>
+        {/* FOOTER BUTTON */}
+        <TouchableOpacity
+          style={[commonStyles.primaryButton, styles.backButton]}
+          onPress={onBackToResults}
+        >
+          <Text style={commonStyles.buttonText}>← Back to Results</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  pageScroll: {
+    flex: 1,
+  },
+  pageContent: {
+    paddingBottom: 16,
+  },
   mapContainer: {
     height: 280,
     marginHorizontal: 16,
@@ -414,7 +422,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContainer: {
-    flex: 1,
     paddingHorizontal: 16,
     backgroundColor: colors.background,
   },
