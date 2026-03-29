@@ -385,7 +385,7 @@ export default function App() {
           </View>
 
           <TouchableOpacity
-            style={commonStyles.primaryButton}
+            style={[commonStyles.primaryButton, styles.uploadActionButton]}
             onPress={pickImage}
           >
             <Text style={commonStyles.buttonText}>
@@ -394,7 +394,7 @@ export default function App() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[commonStyles.primaryButton, { marginTop: 12 }]}
+            style={[commonStyles.primaryButton, styles.uploadActionButton, { marginTop: 12 }]}
             onPress={takePhoto}
           >
             <Text style={commonStyles.buttonText}>Take a Photo</Text>
@@ -402,7 +402,7 @@ export default function App() {
 
           {image && (
             <TouchableOpacity
-              style={commonStyles.secondaryButton}
+              style={[commonStyles.secondaryButton, styles.uploadActionButton]}
               onPress={handleStartDetection}
             >
               <Text style={commonStyles.buttonText}>Start Detection</Text>
@@ -430,4 +430,8 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  uploadActionButton: {
+    width: 280,
+  },
+});
