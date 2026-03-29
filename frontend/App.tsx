@@ -41,6 +41,49 @@ export default function App() {
   const [userName, setUserName] = useState('User');
   const [showDermatologistMap, setShowDermatologistMap] = useState(false);
 
+  const syncUserName = async () => {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setUserName('User');
+        return;
+      }
+
+      const metadataName =
+        user.user_metadata?.full_name ||
+        [user.user_metadata?.first_name, user.user_metadata?.last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+      if (metadataName) {
+        setUserName(metadataName);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('newUsers')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        const fallbackName = user.email?.split('@')[0] || 'User';
+        setUserName(fallbackName);
+        return;
+      }
+
+      const displayName = profileData?.full_name?.trim() || user.email?.split('@')[0] || 'User';
+      setUserName(displayName);
+    } catch {
+      setUserName('User');
+    }
+  };
+
   const panResponderRef = useRef<any>(null);
 
   useEffect(() => {
@@ -54,6 +97,12 @@ export default function App() {
         setIsAuthenticated(false);
         setIsGuest(false);
         setUserRole(null);
+        setUserName('User');
+        return;
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        syncUserName();
       }
     });
 
@@ -61,6 +110,12 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !isGuest) {
+      syncUserName();
+    }
+  }, [isAuthenticated, isGuest]);
 
   const resetNavigationState = () => {
     setShowAccount(false);
@@ -83,6 +138,7 @@ export default function App() {
 
     setIsAuthenticated(false);
     setIsGuest(false);
+    setUserName('User');
     resetNavigationState();
   };
 
@@ -95,6 +151,7 @@ export default function App() {
 
     setIsAuthenticated(false);
     setIsGuest(false);
+    setUserName('User');
     resetNavigationState();
   };
 
@@ -227,15 +284,17 @@ export default function App() {
   if (!isAuthenticated && !isGuest) {
     return (
       <AuthScreen
-        onAuthSuccess={(role) => {
+        onAuthSuccess={async (role) => {
           setIsAuthenticated(true);
           setIsGuest(false);
           setUserRole(role);
+          await syncUserName();
         }}
         onGuestContinue={() => {
           setIsGuest(true);
           setIsAuthenticated(false);
           setUserRole(null);
+          setUserName('Guest');
         }}
       />
     );
@@ -319,6 +378,7 @@ export default function App() {
         <DermatologistMapScreen
           onBackToResults={() => setShowDermatologistMap(false)}
           onAccountPress={() => setShowAccount(true)}
+          userName={userName}
         />
         <AccountDrawer
           isVisible={showAccount}
@@ -340,6 +400,7 @@ export default function App() {
           imageUri={image}
           result={inferenceResult}
           isGuest={isGuest}
+          userName={userName}
           onShowProfile={handleShowProfile}
           onShowHistory={handleShowHistory}
           onFindDermatologists={() => setShowDermatologistMap(true)}

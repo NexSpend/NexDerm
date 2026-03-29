@@ -8,13 +8,21 @@ interface AccountButtonProps {
 }
 
 const getInitials = (name: string): string => {
-  return name
-    .trim()
+  const trimmed = (name || '').trim();
+
+  if (!trimmed || trimmed.toUpperCase() === 'N/A') {
+    return 'U';
+  }
+
+  const initials = trimmed
     .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
     .map(word => word[0])
     .join('')
-    .toUpperCase()
-    .slice(0, 2);
+    .toUpperCase();
+
+  return initials || 'U';
 };
 
 export default function AccountButton({ onPress, userName = 'User' }: AccountButtonProps) {
