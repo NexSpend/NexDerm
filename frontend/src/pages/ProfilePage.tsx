@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   Alert,
 } from 'react-native';
 import { commonStyles, colors } from '../utils/commonStyles';
@@ -29,7 +28,23 @@ export default function ProfilePage({
   onShowChangePassword,
 }: ProfilePageProps) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  const getInitials = (name?: string, email?: string) => {
+    const trimmedName = (name || '').trim();
+    if (trimmedName && trimmedName !== 'N/A') {
+      const parts = trimmedName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2);
+      return parts.map(part => part[0].toUpperCase()).join('');
+    }
+
+    if (email) {
+      return email[0].toUpperCase();
+    }
+
+    return 'U';
+  };
 
   useEffect(() => {
     if (isGuest) {
@@ -94,19 +109,17 @@ export default function ProfilePage({
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileContainer}>
           <View style={styles.avatarSection}>
-            <View style={styles.avatarContainer}>
-              {profileImage ? (
-                <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-              ) : (
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>👤</Text>
-                </View>
-              )}
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {getInitials(userInfo?.full_name, userInfo?.email)}
+              </Text>
             </View>
+            <Text style={styles.profileName}>{userInfo?.full_name || 'User'}</Text>
+            <Text style={styles.profileEmail}>{userInfo?.email || 'N/A'}</Text>
           </View>
 
           <View style={styles.fieldsSection}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
+            <Text style={styles.sectionTitle}>Personal information</Text>
 
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Full Name</Text>
@@ -169,45 +182,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 20,
+    paddingVertical: 16,
     paddingHorizontal: 16,
   },
   profileContainer: {
-    gap: 24,
+    gap: 20,
   },
   avatarSection: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarContainer: {
-    position: 'relative',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingVertical: 22,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    marginBottom: 12,
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: 30,
+    color: colors.white,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   fieldsSection: {
-    gap: 16,
+    gap: 14,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   fieldContainer: {
     gap: 8,
@@ -218,30 +246,30 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   fieldInput: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   fieldInputDisabled: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBg,
   },
   fieldValue: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textPrimary,
   },
   changePasswordButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 20,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 4,
   },
   changePasswordButtonText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
 });
