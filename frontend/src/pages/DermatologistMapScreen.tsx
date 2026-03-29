@@ -122,8 +122,15 @@ export default function DermatologistMapScreen({
       <title>Dermatologist Locator</title>
       <script src="https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places"></script>
       <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { width: 100%; height: 300px; }
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          overflow: hidden;
+          font-family: Arial, sans-serif;
+          background: #f7f9fc;
+        }
+        #map { width: 100%; height: 100%; }
         #info {
           position: absolute;
           top: 10px;
@@ -281,52 +288,76 @@ export default function DermatologistMapScreen({
       {/* HEADER */}
       <View style={commonStyles.header}>
         <Text style={commonStyles.title}>🩺 NexDerm</Text>
-        <Text style={commonStyles.subtitle}>Nearby Dermatologists</Text>
+        <Text style={commonStyles.subtitle}>Nearby dermatologists</Text>
       </View>
 
       {/* MAP */}
-      <WebView
-        source={{ html: htmlContent }}
-        style={styles.map}
-        onMessage={(event) => {
-          try {
-            const message = JSON.parse(event.nativeEvent.data);
-            if (message.type === 'DERMATOLOGISTS') {
-              setTopDermatologists(message.data);
+      <View style={styles.mapContainer}>
+        <WebView
+          source={{ html: htmlContent }}
+          style={styles.map}
+          onMessage={(event) => {
+            try {
+              const message = JSON.parse(event.nativeEvent.data);
+              if (message.type === 'DERMATOLOGISTS') {
+                setTopDermatologists(message.data);
+              }
+            } catch (error) {
+              console.error('Error parsing message:', error);
             }
-          } catch (error) {
-            console.error('Error parsing message:', error);
-          }
-        }}
-      />
+          }}
+        />
+      </View>
 
       {/* TOP 3 DERMATOLOGISTS */}
-      <ScrollView style={styles.listContainer}>
-        <Text style={styles.listTitle}>Top 3 Closest Dermatologists</Text>
+      <ScrollView style={styles.listContainer} contentContainerStyle={styles.listContent}>
+        <View style={styles.listHeader}>
+          <View style={styles.listHeaderTopRow}>
+            <View>
+              <Text style={styles.listTitle}>Top 3 matches near you</Text>
+              <Text style={styles.listMeta}>Ranked by closest distance</Text>
+            </View>
+          </View>
+          <View style={styles.listHeaderAccent} />
+        </View>
         {topDermatologists.length > 0 ? (
           topDermatologists.map((derm, index) => (
-            <View key={index} style={styles.dermCard}>
-              <Text style={styles.dermIndex}>{index + 1}</Text>
+            <View
+              key={`${derm.name}-${index}`}
+              style={[styles.dermCard, index === 0 && styles.dermCardPrimary]}
+            >
+              <View
+                style={[
+                  styles.rankBadge,
+                  index === 0 && styles.rankBadgeGold,
+                  index === 1 && styles.rankBadgeSilver,
+                  index === 2 && styles.rankBadgeBronze,
+                ]}
+              >
+                <Text style={styles.dermIndex}>{index + 1}</Text>
+              </View>
               <View style={styles.dermInfo}>
                 <Text style={styles.dermName}>{derm.name}</Text>
                 <Text style={styles.dermAddress}>{derm.address}</Text>
                 <View style={styles.dermFooter}>
                   <View style={styles.statsContainer}>
-                    <Text style={styles.dermDistance}>📍 {derm.distance} km</Text>
-                    <Text style={styles.dermRating}>⭐ {derm.rating.toFixed(1)}</Text>
+                    <Text style={styles.statChip}>{derm.distance} km</Text>
+                    <Text style={styles.statChip}>
+                      {derm.rating > 0 ? `${derm.rating.toFixed(1)} ★` : 'No rating'}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={styles.navButton}
                     onPress={() => openMapsNavigation(derm.lat || 0, derm.lng || 0, derm.name)}
                   >
-                    <Text style={styles.navButtonText}>→ Navigate</Text>
+                    <Text style={styles.navButtonText}>Open in Maps</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
           ))
         ) : (
-          <Text style={styles.noResultsText}>Loading dermatologists...</Text>
+          <Text style={styles.noResultsText}>No nearby dermatologists found yet.</Text>
         )}
       </ScrollView>
 
@@ -342,11 +373,19 @@ export default function DermatologistMapScreen({
 }
 
 const styles = StyleSheet.create({
+  mapContainer: {
+    height: 280,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.inputBg,
+  },
   map: {
-    width: '100%',
-    height: 350,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    flex: 1,
+    backgroundColor: colors.inputBg,
   },
   loadingContainer: {
     flex: 1,
@@ -377,105 +416,147 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 0,
     backgroundColor: colors.background,
   },
+  listContent: {
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  listHeader: {
+    backgroundColor: '#eef4ff',
+    borderWidth: 1,
+    borderColor: '#d7e4ff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  listHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+  },
+  listHeaderAccent: {
+    width: '100%',
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+    marginTop: 10,
+    opacity: 0.22,
+  },
   listTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.primary,
-    marginBottom: 16,
-    letterSpacing: 0.3,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.primary,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f2f66',
+    marginBottom: 4,
+  },
+  listMeta: {
+    fontSize: 13,
+    color: '#365f9b',
   },
   dermCard: {
     flexDirection: 'row',
     backgroundColor: colors.cardBackground,
-    padding: 16,
+    padding: 14,
     marginBottom: 10,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    borderLeftWidth: 0,
-    borderLeftColor: colors.primary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  dermCardPrimary: {
+    borderColor: '#bfd2f6',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  rankBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.tileBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  rankBadgeGold: {
+    backgroundColor: '#ffe9a8',
+  },
+  rankBadgeSilver: {
+    backgroundColor: '#e5e7eb',
+  },
+  rankBadgeBronze: {
+    backgroundColor: '#f2d6bd',
   },
   dermIndex: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFF',
-    marginRight: 16,
-    minWidth: 45,
-    height: 45,
-    textAlign: 'center',
-    paddingTop: 8,
-    borderRadius: 50,
-    backgroundColor: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1f2937',
   },
   dermInfo: {
     flex: 1,
   },
   dermName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 6,
-    letterSpacing: 0.3,
+    marginBottom: 4,
   },
   dermAddress: {
     fontSize: 13,
     color: colors.textTertiary,
-    marginBottom: 10,
-    lineHeight: 18,
+    marginBottom: 8,
+    lineHeight: 17,
   },
   dermFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    gap: 8,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
+    flexWrap: 'wrap',
   },
-  dermDistance: {
+  statChip: {
     fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  dermRating: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    backgroundColor: colors.inputBg,
+    borderColor: colors.borderLight,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   navButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   navButtonText: {
-    color: '#FFF',
-    fontWeight: '700',
+    color: colors.textPrimary,
+    fontWeight: '600',
     fontSize: 12,
   },
   noResultsText: {
     fontSize: 14,
     color: colors.textTertiary,
     textAlign: 'center',
-    marginTop: 24,
-    fontWeight: '500',
+    marginTop: 18,
   },
   backButton: {
-    margin: 16,
-    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 16,
+    borderRadius: 10,
   },
 });

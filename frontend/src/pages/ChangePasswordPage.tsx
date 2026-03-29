@@ -24,81 +24,78 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-const handleChangePassword = async () => {
-  if (!currentPassword.trim()) {
-    Alert.alert('Error', 'Please enter your current password');
-    return;
-  }
-
-  if (!newPassword.trim()) {
-    Alert.alert('Error', 'Please enter a new password');
-    return;
-  }
-
-  if (!confirmPassword.trim()) {
-    Alert.alert('Error', 'Please confirm your new password');
-    return;
-  }
-
-  if (newPassword.length < 6) {
-    Alert.alert('Error', 'Password must be at least 6 characters long');
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    Alert.alert('Error', 'Passwords do not match');
-    return;
-  }
-
-  if (currentPassword === newPassword) {
-    Alert.alert('Error', 'New password must be different from current password');
-    return;
-  }
-
-  try {
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user || !user.email) {
-      Alert.alert('Error', 'User not logged in');
+  const handleChangePassword = async () => {
+    if (!currentPassword.trim()) {
+      Alert.alert('Error', 'Please enter your current password');
       return;
     }
 
-    // 🔑 Step 1: Verify current password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
-
-    if (signInError) {
-      Alert.alert('Error', 'Current password is incorrect');
+    if (!newPassword.trim()) {
+      Alert.alert('Error', 'Please enter a new password');
       return;
     }
 
-    // 🔒 Step 2: Update password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (updateError) {
-      Alert.alert('Error', updateError.message);
+    if (!confirmPassword.trim()) {
+      Alert.alert('Error', 'Please confirm your new password');
       return;
     }
 
-    Alert.alert('Success', 'Password updated successfully');
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
 
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
 
-    onBackToProfile();
-  } catch (err: any) {
-    Alert.alert('Error', err.message || 'Something went wrong');
-  }
-};
+    if (currentPassword === newPassword) {
+      Alert.alert('Error', 'New password must be different from current password');
+      return;
+    }
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user || !user.email) {
+        Alert.alert('Error', 'User not logged in');
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        Alert.alert('Error', 'Current password is incorrect');
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        Alert.alert('Error', updateError.message);
+        return;
+      }
+
+      Alert.alert('Success', 'Password updated successfully');
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+      onBackToProfile();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Something went wrong');
+    }
+  };
 
   const PasswordToggleButton = ({ show, onPress }: { show: boolean; onPress: () => void }) => (
     <TouchableOpacity style={styles.toggleButton} onPress={onPress}>
@@ -118,6 +115,11 @@ const handleChangePassword = async () => {
 
       <View style={styles.content}>
         <View style={styles.formContainer}>
+          <Text style={styles.pageTitle}>Update your password</Text>
+          <Text style={styles.pageSubtitle}>
+            Enter your current password and choose a new one.
+          </Text>
+
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Current Password</Text>
             <View style={styles.passwordInputContainer}>
@@ -126,9 +128,14 @@ const handleChangePassword = async () => {
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 placeholder="Enter current password"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry={!showCurrentPassword}
                 editable={!loading}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="password"
+                autoComplete="current-password"
+                importantForAutofill="yes"
               />
               <PasswordToggleButton
                 show={showCurrentPassword}
@@ -145,9 +152,14 @@ const handleChangePassword = async () => {
                 value={newPassword}
                 onChangeText={setNewPassword}
                 placeholder="Enter new password"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry={!showNewPassword}
                 editable={!loading}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                autoComplete="new-password"
+                importantForAutofill="yes"
               />
               <PasswordToggleButton
                 show={showNewPassword}
@@ -164,9 +176,14 @@ const handleChangePassword = async () => {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm new password"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry={!showConfirmPassword}
                 editable={!loading}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                autoComplete="new-password"
+                importantForAutofill="yes"
               />
               <PasswordToggleButton
                 show={showConfirmPassword}
@@ -211,19 +228,34 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   placeholder: {
     width: 40,
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-start',
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 16,
   },
   formContainer: {
-    gap: 16,
+    gap: 14,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 16,
+    padding: 16,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 6,
   },
   fieldContainer: {
     gap: 8,
@@ -231,25 +263,27 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
   },
   passwordInput: {
     flex: 1,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: colors.text,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.textPrimary,
+    letterSpacing: 0,
   },
   toggleButton: {
-    padding: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
   },
   toggleButtonText: {
     fontSize: 12,
@@ -258,17 +292,17 @@ const styles = StyleSheet.create({
   },
   changeButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 20,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   changeButtonDisabled: {
     opacity: 0.7,
   },
   changeButtonText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
 });
