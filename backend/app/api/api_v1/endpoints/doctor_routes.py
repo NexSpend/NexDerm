@@ -4,9 +4,11 @@ from pydantic import BaseModel
 import traceback
 
 from app.services.auth_service import get_current_user_id
+from app.services.s3_service import S3Service
 from app.api.api_v1.endpoints.dataBase_endpoints.dataBase_connection import get_connection
 
 router = APIRouter()
+s3_service = S3Service()
 
 # Pydantic model for the doctor's review data
 class DoctorReview(BaseModel):
@@ -41,6 +43,7 @@ async def get_pending_cases(
                 r.prediction, 
                 r.confidence, 
                 r.created_at,
+                r.image_s3_key,
                 u.full_name,
                 u.email
             FROM reports r
@@ -53,17 +56,23 @@ async def get_pending_cases(
         pending_cases = cursor.fetchall()
 
         # Convert list of tuples from DB to a list of dictionaries for API response
-        result = [
-            {
-                "id": row[0],
-                "prediction": row[1],
-                "confidence": row[2],
-                "created_at": row[3],
-                "user_name": row[4],
-                "user_email": row[5],
-            }
-            for row in pending_cases
-        ]
+        result = []
+        for row in pending_cases:
+            image_url = None
+            if row[4]:
+                image_url = s3_service.generate_presigned_image_url(row[4], expires_in=3600)
+
+            result.append(
+                {
+                    "id": str(row[0]),
+                    "prediction": row[1],
+                    "confidence": float(row[2]) if row[2] is not None else 0.0,
+                    "created_at": row[3].isoformat() if row[3] else None,
+                    "image_url": image_url,
+                    "user_name": row[5],
+                    "user_email": row[6],
+                }
+            )
 
         return result
 

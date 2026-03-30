@@ -30,6 +30,20 @@ class S3Service:
 
         return s3_key
 
+    def upload_image_bytes(self, image_bytes: bytes, s3_key: str, content_type: str = "image/jpeg") -> str:
+        image_file = BytesIO(image_bytes)
+
+        self.s3_client.upload_fileobj(
+            image_file,
+            self.bucket_name,
+            s3_key,
+            ExtraArgs={
+                "ContentType": content_type
+            }
+        )
+
+        return s3_key
+
     def generate_presigned_download_url(self, s3_key: str, expires_in: int = 3600) -> str:
         try:
             url = self.s3_client.generate_presigned_url(
@@ -45,3 +59,18 @@ class S3Service:
             return url
         except ClientError as e:
             raise Exception(f"Could not generate presigned URL: {str(e)}")
+
+    def generate_presigned_image_url(self, s3_key: str, expires_in: int = 3600) -> str:
+        try:
+            url = self.s3_client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": self.bucket_name,
+                    "Key": s3_key,
+                    "ResponseContentDisposition": "inline",
+                },
+                ExpiresIn=expires_in,
+            )
+            return url
+        except ClientError as e:
+            raise Exception(f"Could not generate presigned image URL: {str(e)}")

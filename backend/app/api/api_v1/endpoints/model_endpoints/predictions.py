@@ -80,6 +80,15 @@ async def classify_image(
         report_id = str(uuid4())
         print("STEP 6: report_id =", report_id)
 
+        image_ext = "jpg"
+        if file.filename and "." in file.filename:
+            image_ext = file.filename.rsplit(".", 1)[-1].lower()
+
+        image_content_type = file.content_type or "image/jpeg"
+        image_s3_key = f"reports/{user_id}/{report_id}/input_image.{image_ext}"
+        s3_service.upload_image_bytes(image_bytes, image_s3_key, image_content_type)
+        print("STEP 7: image uploaded to S3, key =", image_s3_key)
+
         pdf_bytes = generate_prediction_report_pdf(
             patient_id=str(user_id),
             report_id=report_id,
@@ -87,28 +96,47 @@ async def classify_image(
             confidence=confidence,
             report_text=report_text,
         )
-        print("STEP 7: PDF generated, bytes =", len(pdf_bytes))
+        print("STEP 8: PDF generated, bytes =", len(pdf_bytes))
 
-        s3_key = f"reports/{user_id}/{report_id}/report.pdf"
-        s3_service.upload_pdf_bytes(pdf_bytes, s3_key)
-        print("STEP 8: PDF uploaded to S3, key =", s3_key)
+        report_s3_key = f"reports/{user_id}/{report_id}/report.pdf"
+        s3_service.upload_pdf_bytes(pdf_bytes, report_s3_key)
+        print("STEP 9: PDF uploaded to S3, key =", report_s3_key)
 
         conn = get_connection()
         cursor = conn.cursor()
-        print("STEP 9: DB connection opened")
+        print("STEP 10: DB connection opened")
 
         cursor.execute(
             """
-            INSERT INTO reports (id, user_id, prediction, confidence, report_s3_key, report_file_name)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO reports (
+                id,
+                user_id,
+                prediction,
+                confidence,
+                report_s3_key,
+                report_file_name,
+                image_s3_key,
+                image_file_name,
+                status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Pending')
             RETURNING id;
             """,
-            (report_id, user_id, label, confidence, s3_key, "report.pdf")
+            (
+                report_id,
+                user_id,
+                label,
+                confidence,
+                report_s3_key,
+                "report.pdf",
+                image_s3_key,
+                f"input_image.{image_ext}",
+            )
         )
 
         saved_report_id = cursor.fetchone()[0]
         conn.commit()
-        print("STEP 10: DB insert committed, saved_report_id =", saved_report_id)
+        print("STEP 11: DB insert committed, saved_report_id =", saved_report_id)
 
         response["report_id"] = str(saved_report_id)
         return response

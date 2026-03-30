@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.245:8000/api/v1";
+export const API_URL = "http://192.168.2.108:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -141,9 +141,7 @@ export const uploadImage = async (
     const response = await fetch(`${API_URL}/predictions/`, {
       method: "POST",
       body: formData,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -267,7 +265,21 @@ export const getUserInfo = async () => {
   return response.json();
 };
 
-export const getMedicalHistory = async () => {
+export interface MedicalHistoryItem {
+  id: string;
+  prediction: string | null;
+  confidence: number | null;
+  report_url: string | null;
+  image_url?: string | null;
+  report_file_name?: string | null;
+  created_at: string | null;
+  status?: string | null;
+  doctor_notes?: string | null;
+  final_diagnosis?: string | null;
+  reviewed_at?: string | null;
+}
+
+export const getMedicalHistory = async (): Promise<MedicalHistoryItem[]> => {
   try {
     const {
       data: { session },
@@ -293,7 +305,7 @@ export const getMedicalHistory = async () => {
     }
 
     const data = await response.json();
-    return data.reports || [];
+    return (data.reports || []) as MedicalHistoryItem[];
   } catch (error) {
     console.error('Error fetching medical history:', error);
     throw error;
@@ -329,6 +341,7 @@ export interface PendingCase {
   prediction: string;
   confidence: number;
   created_at: string;
+  image_url?: string;
   user_name?: string;
   user_email?: string;
 }
@@ -405,8 +418,8 @@ export const submitDoctorReview = async (
       final_diagnosis: diagnosis,
     });
 
-    const response = await fetch(`${API_URL}/doctors/review/${caseId}`, {
-      method: 'POST',
+    const response = await fetch(`${API_URL}/doctors/${caseId}/review`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
