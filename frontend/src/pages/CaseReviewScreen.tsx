@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { colors } from '../utils/commonStyles';
 import { PendingCase, submitDoctorReview } from '../services/api';
@@ -80,6 +81,19 @@ export default function CaseReviewScreen({ selectedCase, onBack }: CaseReviewScr
                 <Text style={styles.summaryLabel}>Submitted On</Text>
                 <Text style={styles.summaryValue}>{submittedOn}</Text>
               </View>
+            </View>
+
+            <View style={styles.imageCard}>
+              <Text style={styles.imageLabel}>Uploaded Image</Text>
+              {selectedCase.image_url ? (
+                <Image
+                  source={{ uri: selectedCase.image_url }}
+                  style={styles.caseImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.noImageText}>No image is available for this case.</Text>
+              )}
             </View>
 
             <View style={styles.formCard}>
@@ -204,6 +218,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderLight,
     padding: 14,
+  },
+  imageCard: {
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 14,
+  },
+  imageLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  caseImage: {
+    width: '100%',
+    height: 260,
+    borderRadius: 12,
+    backgroundColor: '#EEF2F7',
+  },
+  noImageText: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   inputLabel: {
     fontSize: 13,
