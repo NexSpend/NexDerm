@@ -193,7 +193,7 @@ export default function InferencePage({
                 isGuest && styles.disabledDownloadButtonText,
               ]}
             >
-              📄 Download Latest Report PDF
+              📄 Download Detailed Report PDF
             </Text>
           </TouchableOpacity>
 
