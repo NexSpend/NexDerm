@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pathlib
-from typing import Any, Dict, List, Optional
+from collections import Counter, defaultdict
+from typing import Any, Dict, List, Optional, Sequence
 import torch
 from PIL import Image
 from torch import nn
@@ -49,7 +50,8 @@ class DenseNetDiseaseClassifier:
         self.device = torch.device(
             config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
         )
-        self.model: Optional[nn.Module] = None
+        self.models: List[nn.Module] = []
+        self.model_names: List[str] = []
         self.transform = None
         self.idx_to_class: Optional[List[str]] = None
 
@@ -76,14 +78,16 @@ class DenseNetDiseaseClassifier:
         )
 
         try:
-            self.model = models.densenet121(weights=models.DenseNet121_Weights.IMAGENET1K_V1)
+            model = models.densenet121(weights=models.DenseNet121_Weights.IMAGENET1K_V1)
         except AttributeError:
-            self.model = models.densenet121(pretrained=True)
+            model = models.densenet121(pretrained=True)
 
-        self.model.classifier = nn.Linear(self.model.classifier.in_features, num_classes)
-        self.model.load_state_dict(get_state_dict(ckpt))
-        self.model.to(self.device)
-        self.model.eval()
+        model.classifier = nn.Linear(model.classifier.in_features, num_classes)
+        model.load_state_dict(get_state_dict(ckpt))
+        model.to(self.device)
+        model.eval()
+        self.models.append(model)
+        self.model_names.append(pathlib.Path(checkpoint_path).name)
 
     def preprocess_image(self, image: Image.Image) -> torch.Tensor:
         if self.transform is None:
@@ -94,10 +98,10 @@ class DenseNetDiseaseClassifier:
         return x.to(self.device)
 
     def predict_logits(self, x: torch.Tensor) -> torch.Tensor:
-        if self.model is None:
+        if not self.models:
             raise RuntimeError("DenseNet model not loaded.")
         with torch.no_grad():
-            return self.model(x)
+            return torch.stack([model(x) for model in self.models], dim=0)
 
 
 # ResNet Wrapper
@@ -107,7 +111,8 @@ class ResNetDiseaseClassifier:
         self.device = torch.device(
             config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
         )
-        self.model: Optional[nn.Module] = None
+        self.models: List[nn.Module] = []
+        self.model_names: List[str] = []
         self.idx_to_class: Optional[List[str]] = None
 
     def load_from_checkpoint(
@@ -128,21 +133,22 @@ class ResNetDiseaseClassifier:
             raise ValueError("ResNet checkpoint missing class_to_idx and no fallback provided.")
 
         try:
-            self.model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+            model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
         except AttributeError:
-            self.model = models.resnet50(pretrained=True)
+            model = models.resnet50(pretrained=True)
 
-        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-        self.model.load_state_dict(get_state_dict(ckpt))
-        self.model.to(self.device)
-        self.model.eval()
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        model.load_state_dict(get_state_dict(ckpt))
+        model.to(self.device)
+        model.eval()
+        self.models.append(model)
+        self.model_names.append(pathlib.Path(checkpoint_path).name)
 
     def predict_logits(self, x: torch.Tensor) -> torch.Tensor:
-        if self.model is None:
+        if not self.models:
             raise RuntimeError("ResNet model not loaded.")
         with torch.no_grad():
-            return self.model(x)
-
+            return torch.stack([model(x) for model in self.models], dim=0)
 
 # Ensemble (combined)
 class EnsembleDiseaseClassifier:
@@ -151,31 +157,49 @@ class EnsembleDiseaseClassifier:
         self.device = torch.device(
             config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
         )
-
-        # default weights (we tuned this quickly during experimentation)
-        self.w_dense = float(config.get("w_dense", 0.0))
-        self.w_resnet = float(config.get("w_resnet", 1.0))
-
         self.densenet = DenseNetDiseaseClassifier(config=config)
         self.resnet = ResNetDiseaseClassifier(config=config)
         self.idx_to_class: Optional[List[str]] = None
 
     def load_from_checkpoints(
         self,
-        densenet_path: str | pathlib.Path,
-        resnet_path: str | pathlib.Path,
+        densenet_path: str | pathlib.Path | Sequence[str | pathlib.Path],
+        resnet_path: str | pathlib.Path | Sequence[str | pathlib.Path],
     ) -> None:
-        self.densenet.load_from_checkpoint(densenet_path)
-        self.idx_to_class = self.densenet.idx_to_class
-
-        self.resnet.load_from_checkpoint(
-            resnet_path,
-            fallback_idx_to_class=self.idx_to_class,
+        densenet_paths = (
+            [pathlib.Path(densenet_path)]
+            if isinstance(densenet_path, (str, pathlib.Path))
+            else [pathlib.Path(path) for path in densenet_path]
         )
+        resnet_paths = (
+            [pathlib.Path(resnet_path)]
+            if isinstance(resnet_path, (str, pathlib.Path))
+            else [pathlib.Path(path) for path in resnet_path]
+        )
+
+        dense_idx_to_class: Optional[List[str]] = None
+        for path in densenet_paths:
+            self.densenet.load_from_checkpoint(path)
+            if dense_idx_to_class is None:
+                dense_idx_to_class = self.densenet.idx_to_class
+            elif self.densenet.idx_to_class != dense_idx_to_class:
+                raise ValueError("DenseNet checkpoints have inconsistent class order.")
+        self.idx_to_class = dense_idx_to_class
+
+        for path in resnet_paths:
+            self.resnet.load_from_checkpoint(
+                path,
+                fallback_idx_to_class=self.idx_to_class,
+            )
+            if self.resnet.idx_to_class != self.idx_to_class:
+                raise ValueError("ResNet checkpoints have inconsistent class order.")
 
         # sanity check
         if self.resnet.idx_to_class != self.idx_to_class:
             raise ValueError("DenseNet and ResNet class order mismatch.")
+
+        if not self.densenet.models or not self.resnet.models:
+            raise ValueError("Both DenseNet and ResNet ensembles must load at least one checkpoint.")
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         if self.idx_to_class is None:
@@ -186,27 +210,85 @@ class EnsembleDiseaseClassifier:
         dense_logits = self.densenet.predict_logits(x)
         resnet_logits = self.resnet.predict_logits(x)
 
-        ens_logits = self.w_dense * dense_logits + self.w_resnet * resnet_logits
+        dense_probs = torch.softmax(dense_logits, dim=2)
+        resnet_probs = torch.softmax(resnet_logits, dim=2)
 
-        dense_probs = torch.softmax(dense_logits, dim=1)
-        resnet_probs = torch.softmax(resnet_logits, dim=1)
-        ens_probs = torch.softmax(ens_logits, dim=1)
+        dense_conf, dense_idx = torch.max(dense_probs, dim=2)
+        res_conf, res_idx = torch.max(resnet_probs, dim=2)
 
-        dense_conf, dense_idx = torch.max(dense_probs, dim=1)
-        res_conf, res_idx = torch.max(resnet_probs, dim=1)
-        ens_conf, ens_idx = torch.max(ens_probs, dim=1)
+        vote_counts: Counter[int] = Counter()
+        confidence_sums: defaultdict[int, float] = defaultdict(float)
+
+        dense_vote_weights = [2 if i < 3 else 1 for i in range(len(self.densenet.models))]
+        resnet_vote_weights = [1 for _ in range(len(self.resnet.models))]
+
+        for dense_weight, idx_tensor, conf_tensor in zip(dense_vote_weights, dense_idx, dense_conf):
+            pred_idx = int(idx_tensor.item())
+            vote_counts[pred_idx] += dense_weight
+            confidence_sums[pred_idx] += float(conf_tensor.item())
+
+        for resnet_weight, idx_tensor, conf_tensor in zip(resnet_vote_weights, res_idx, res_conf):
+            pred_idx = int(idx_tensor.item())
+            vote_counts[pred_idx] += resnet_weight
+            confidence_sums[pred_idx] += float(conf_tensor.item())
+
+        ens_idx = max(
+            vote_counts,
+            key=lambda idx: (vote_counts[idx], confidence_sums[idx], -idx),
+        )
+        total_votes = sum(vote_counts.values())
+        ens_conf = confidence_sums[ens_idx] / total_votes if total_votes else 0.0
+
+        dense_vote_idx, dense_vote_count = Counter(int(idx.item()) for idx in dense_idx).most_common(1)[0]
+        res_vote_idx, res_vote_count = Counter(int(idx.item()) for idx in res_idx).most_common(1)[0]
+
+        print("\n=== Ensemble Prediction ===")
+        for model_name, idx_tensor, conf_tensor in zip(
+            self.densenet.model_names, dense_idx, dense_conf
+        ):
+            pred_idx = int(idx_tensor.item())
+            print(
+                f"[DenseNet] {model_name}: "
+                f"{self.idx_to_class[pred_idx]} ({float(conf_tensor.item()):.4f}, vote_weight={dense_vote_weights[self.densenet.model_names.index(model_name)]})"
+            )
+
+        for model_name, idx_tensor, conf_tensor in zip(
+            self.resnet.model_names, res_idx, res_conf
+        ):
+            pred_idx = int(idx_tensor.item())
+            print(
+                f"[ResNet] {model_name}: "
+                f"{self.idx_to_class[pred_idx]} ({float(conf_tensor.item()):.4f}, vote_weight={resnet_vote_weights[self.resnet.model_names.index(model_name)]})"
+            )
+
+        print("Vote totals:")
+        for class_name, count in sorted(
+            ((self.idx_to_class[idx], count) for idx, count in vote_counts.items()),
+            key=lambda item: (-item[1], item[0]),
+        ):
+            print(f"  {class_name}: {count}")
+
+        print(
+            f"Final prediction: {self.idx_to_class[ens_idx]} "
+            f"(confidence={float(ens_conf):.4f})"
+        )
 
         return {
-            "prediction": self.idx_to_class[ens_idx.item()],
-            "confidence": float(ens_conf.item()),
+            "prediction": self.idx_to_class[ens_idx],
+            "confidence": float(ens_conf),
+            "votes": dict(sorted((self.idx_to_class[idx], count) for idx, count in vote_counts.items())),
             "model_outputs": {
                 "densenet": {
-                    "prediction": self.idx_to_class[dense_idx.item()],
-                    "confidence": float(dense_conf.item()),
+                    "prediction": self.idx_to_class[dense_vote_idx],
+                    "confidence": float(dense_conf.mean().item()),
+                    "votes": int(dense_vote_count),
+                    "models_used": len(self.densenet.models),
                 },
                 "resnet": {
-                    "prediction": self.idx_to_class[res_idx.item()],
-                    "confidence": float(res_conf.item()),
+                    "prediction": self.idx_to_class[res_vote_idx],
+                    "confidence": float(res_conf.mean().item()),
+                    "votes": int(res_vote_count),
+                    "models_used": len(self.resnet.models),
                 },
             },
         }

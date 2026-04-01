@@ -28,6 +28,7 @@ class ModelService:
     @staticmethod
     def _load_model_pipeline() -> SkinFilterWrapper:
         print("Initializing the ML Pipeline (Ensemble + CLIP Filter)...")
+        artifacts_dir = pathlib.Path("app/models/ml/artifacts")
         config = {
             "device": "cuda" if torch.cuda.is_available() else "cpu",
             "w_dense": float(settings.ENSEMBLE_WEIGHT_DENSENET),
@@ -37,8 +38,20 @@ class ModelService:
         # 1. Load the underlying ensemble
         ensemble = EnsembleDiseaseClassifier(config=config)
         ensemble.load_from_checkpoints(
-            pathlib.Path(settings.MODEL_PATH_DENSENET),
-            pathlib.Path(settings.MODEL_PATH_RESNET),
+            [
+                artifacts_dir / "densenet121_skin_best1.pth",
+                artifacts_dir / "densenet121_skin_best2.pth",
+                artifacts_dir / "densenet121_skin_best3.pth",
+                artifacts_dir / "densenet121_skin_best4.pth",
+                artifacts_dir / "densenet121_skin_best5.pth",
+            ],
+            [
+                artifacts_dir / "resnet50_skin_best1.pth",
+                artifacts_dir / "resnet50_skin_best2.pth",
+                artifacts_dir / "resnet50_skin_best3.pth",
+                artifacts_dir / "resnet50_skin_best4.pth",
+                artifacts_dir / "resnet50_skin_best5.pth",
+            ],
         )
 
         # 2. Wrap it with the CLIP skin filter
