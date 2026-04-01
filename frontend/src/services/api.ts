@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.245:8000/api/v1";
+export const API_URL = "http://192.168.2.99:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -95,6 +95,9 @@ export interface PredictionResponse {
   prediction: string;
   confidence: number;
   recommendations: string;
+  risk_level?: 'high' | 'medium' | 'low';
+  is_uncertain?: boolean;
+  uncertainty_message?: string | null;
   model_outputs?: {
     densenet: { prediction: string; confidence: number };
     resnet: { prediction: string; confidence: number };
@@ -121,10 +124,10 @@ export const uploadImage = async (
 ): Promise<PredictionResponse> => {
   try {
     const formData = new FormData();
-    formData.append("file", {
+    formData.append('file', {
       uri: imageUri,
       name: `upload_${Date.now()}.jpg`,
-      type: "image/jpeg",
+      type: 'image/jpeg',
     } as any);
 
     const {
@@ -135,25 +138,23 @@ export const uploadImage = async (
 
     const headers: Record<string, string> = {};
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}/predictions/`, {
-      method: "POST",
+      method: 'POST',
       body: formData,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to process image. Please try again.");
+      throw new Error(err.detail || 'Failed to process image. Please try again.');
     }
 
     return (await response.json()) as PredictionResponse;
   } catch (error) {
-    console.error("Error uploading image:", error);
+    console.error('Error uploading image:', error);
     throw error;
   }
 };

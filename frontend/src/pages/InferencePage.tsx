@@ -20,7 +20,11 @@ interface BackendResult {
   confidence: number; // can be 0–1 or 0–100
   recommendations?: string | string[];
   description?: string;
-  severity?: string;
+
+  // new backend fields
+  risk_level?: 'high' | 'medium' | 'low';
+  is_uncertain?: boolean;
+  uncertainty_message?: string | null;
 }
 
 interface InferencePageProps {
@@ -47,13 +51,14 @@ export default function InferencePage({
   const confidencePercent =
     result.confidence <= 1 ? result.confidence * 100 : result.confidence;
 
-  const severity =
-    result.severity ||
-    (confidencePercent >= 80
+  const riskLevelText =
+    result.risk_level === 'high'
       ? 'High Risk'
-      : confidencePercent >= 50
+      : result.risk_level === 'medium'
       ? 'Moderate Risk'
-      : 'Low Risk');
+      : result.risk_level === 'low'
+      ? 'Low Risk'
+      : 'Unknown Risk';
 
   const recommendationsArray: string[] = Array.isArray(result.recommendations)
     ? result.recommendations
@@ -148,10 +153,42 @@ export default function InferencePage({
 
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>Risk Level</Text>
-              <View style={styles.severityBadge}>
-                <Text style={styles.severityText}>{severity}</Text>
+              <View
+                style={[
+                  styles.riskBadge,
+                  result.risk_level === 'high'
+                    ? styles.riskBadgeHigh
+                    : result.risk_level === 'medium'
+                    ? styles.riskBadgeMedium
+                    : styles.riskBadgeLow,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.riskText,
+                    result.risk_level === 'high'
+                      ? styles.riskTextHigh
+                      : result.risk_level === 'medium'
+                      ? styles.riskTextMedium
+                      : styles.riskTextLow,
+                  ]}
+                >
+                  {riskLevelText}
+                </Text>
               </View>
             </View>
+
+            {result.is_uncertain && (
+              <View style={styles.section}>
+                <Text style={commonStyles.sectionLabel}>Result Warning</Text>
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningText}>
+                    {result.uncertainty_message ||
+                      'The model confidence is low, so this result may be uncertain.'}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.section}>
               <Text style={commonStyles.sectionLabel}>About this condition</Text>
@@ -261,20 +298,54 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'right',
   },
-  severityBadge: {
+
+  riskBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.errorBg,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
+  },
+  riskBadgeHigh: {
+    backgroundColor: colors.errorBg,
     borderColor: colors.errorBorder,
   },
-  severityText: {
+  riskBadgeMedium: {
+    backgroundColor: '#FFF4CC',
+    borderColor: '#E0B100',
+  },
+  riskBadgeLow: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#81C784',
+  },
+  riskText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  riskTextHigh: {
     color: colors.errorText,
   },
+  riskTextMedium: {
+    color: '#8A6D00',
+  },
+  riskTextLow: {
+    color: '#2E7D32',
+  },
+
+  warningBox: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#E0B100',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+  },
+  warningText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8A6D00',
+    fontWeight: '600',
+  },
+
   description: {
     fontSize: 14,
     color: colors.textTertiary,
