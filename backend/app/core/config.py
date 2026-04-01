@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
 
     # ML Model settings
-    MODEL_PATH: str = "app/models/ml/artifacts/densenet_skin_best.pth"
+    MODEL_PATH: str = "app/models/ml/artifacts/densenet121_skin_best1.pth"
     
     # Other settings
 
@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # ML model paths
-    MODEL_PATH_DENSENET: str = "app/models/ml/artifacts/densenet_skin_best.pth"
-    MODEL_PATH_RESNET: str = "app/models/ml/artifacts/resnet50_skin_best.pth"
+    MODEL_PATH_DENSENET: str = "app/models/ml/artifacts/densenet121_skin_best1.pth"
+    MODEL_PATH_RESNET: str = "app/models/ml/artifacts/resnet50_skin_best1.pth"
 
     # Ensemble weights
     ENSEMBLE_WEIGHT_DENSENET: float = 0.5
