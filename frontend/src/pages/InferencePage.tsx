@@ -14,13 +14,28 @@ import {
 import { commonStyles, colors } from '../utils/commonStyles';
 import { getLatestReport } from '../services/api';
 import AccountButton from './AccountButton';
+import conditionData from '../data/conditionData.json';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface BackendResult {
   prediction: string;
-  confidence: number; // can be 0–1 or 0–100
+  confidence: number;
   recommendations?: string | string[];
   description?: string;
   severity?: string;
+}
+
+interface ConditionInfo {
+  displayName: string;
+  severity: string;
+  severityColor: 'success' | 'warning' | 'danger';
+  description: string;
+  causes: string[];
+  symptoms: string[];
+  whatToObserve: string[];
+  recommendations: string[];
+  whenToSeekCare: string;
 }
 
 interface InferencePageProps {
@@ -35,6 +50,50 @@ interface InferencePageProps {
   userName?: string;
 }
 
+// ── Severity colour map ───────────────────────────────────────────────────────
+
+const SEVERITY_STYLES: Record<string, { bg: string; border: string; text: string }> = {
+  success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' },
+  warning: { bg: '#fffbeb', border: '#fde68a', text: '#d97706' },
+  danger:  { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <>
+      {items.map((item, i) => (
+        <View key={i} style={styles.bulletRow}>
+          <Text style={styles.bullet}>•</Text>
+          <Text style={styles.bulletText}>{item}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function AlertBox({ text }: { text: string }) {
+  return (
+    <View style={styles.alertBox}>
+      <Text style={styles.alertIcon}>⚠️</Text>
+      <Text style={styles.alertText}>{text}</Text>
+    </View>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function InferencePage({
   imageUri,
   result,
@@ -47,54 +106,31 @@ export default function InferencePage({
   const confidencePercent =
     result.confidence <= 1 ? result.confidence * 100 : result.confidence;
 
-  const severity =
-    result.severity ||
-    (confidencePercent >= 80
-      ? 'High Risk'
-      : confidencePercent >= 50
-      ? 'Moderate Risk'
-      : 'Low Risk');
+  // Look up rich condition info from JSON; fall back gracefully
+  const info: ConditionInfo | null =
+    (conditionData as Record<string, ConditionInfo>)[result.prediction] ?? null;
 
-  const recommendationsArray: string[] = Array.isArray(result.recommendations)
-    ? result.recommendations
-    : result.recommendations
-    ? result.recommendations
-        .split(/\n|\. /)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-
-  const descriptionText =
-    result.description ||
-    'No detailed description is available. Please consult a dermatologist for further evaluation.';
+  const severityLabel  = info?.severity ?? (
+    confidencePercent >= 80 ? 'High Risk' :
+    confidencePercent >= 50 ? 'Moderate Risk' : 'Low Risk'
+  );
+  const severityColor  = info?.severityColor ?? 'warning';
+  const severityStyle  = SEVERITY_STYLES[severityColor];
 
   const handleDownloadLatestReport = async () => {
     if (isGuest) {
-      Alert.alert(
-        'Sign Up Required',
-        'Sign up or log in in order to download reports.'
-      );
+      Alert.alert('Sign Up Required', 'Sign up or log in to download reports.');
       return;
     }
-
     try {
       const data = await getLatestReport();
-
       if (!data.download_url) {
-        Alert.alert('Error', 'No report available.');
+        Alert.alert('Not Ready', 'Your report is still being generated. Please try again in a few seconds.');
         return;
       }
-
-      const fileUri =
-        FileSystem.documentDirectory + `nexderm-report-${Date.now()}.pdf`;
-
-      const downloadResult = await FileSystem.downloadAsync(
-        data.download_url,
-        fileUri
-      );
-
+      const fileUri = FileSystem.documentDirectory + `nexderm-report-${Date.now()}.pdf`;
+      const downloadResult = await FileSystem.downloadAsync(data.download_url, fileUri);
       const canShare = await Sharing.isAvailableAsync();
-
       if (canShare) {
         await Sharing.shareAsync(downloadResult.uri, {
           mimeType: 'application/pdf',
@@ -104,122 +140,150 @@ export default function InferencePage({
       } else {
         Alert.alert('Success', 'Report downloaded.');
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Failed to download report.');
+    } catch (error: any) {
+      // 202 = report still being generated by background task
+      if (error?.message?.includes('202')) {
+        Alert.alert('Not Ready Yet', 'Your report is still being generated. Please wait a few seconds and try again.');
+      } else {
+        console.error(error);
+        Alert.alert('Error', 'Failed to download report.');
+      }
     }
   };
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
+      {onAccountPress && (
+        <AccountButton onPress={onAccountPress} userName={userName} />
+      )}
 
-      <ScrollView contentContainerStyle={[commonStyles.scrollContent, styles.pageScrollContent]}>
+      <ScrollView contentContainerStyle={[commonStyles.scrollContent, styles.scroll]}>
+        {/* ── Header ── */}
         <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>Detection Results</Text>
         </View>
 
-        <View style={[commonStyles.body, styles.bodyPadding]}>
+        <View style={styles.body}>
+          {/* ── Image ── */}
           <View style={commonStyles.imageBox}>
             <Image source={{ uri: imageUri }} style={commonStyles.previewImage} />
           </View>
 
+          {/* ── Result card ── */}
           <View style={commonStyles.cardWide}>
-            <Text style={commonStyles.sectionLabel}>Detected Condition</Text>
-            <Text style={styles.conditionName}>
-              {result.prediction || 'Unknown Condition'}
-            </Text>
 
-            <View style={styles.section}>
-              <Text style={commonStyles.sectionLabel}>Confidence</Text>
+            {/* Condition name + severity badge */}
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionName}>
+                {info?.displayName ?? result.prediction ?? 'Unknown Condition'}
+              </Text>
+              <View style={[styles.severityBadge, { backgroundColor: severityStyle.bg, borderColor: severityStyle.border }]}>
+                <Text style={[styles.severityText, { color: severityStyle.text }]}>
+                  {severityLabel}
+                </Text>
+              </View>
+            </View>
+
+            {/* Confidence bar */}
+            <SectionBlock title="Confidence Score">
               <View style={styles.confidenceBar}>
                 <View
                   style={[
                     styles.confidenceFill,
-                    { width: `${Math.max(0, Math.min(100, confidencePercent))}%` },
+                    {
+                      width: `${Math.max(0, Math.min(100, confidencePercent))}%`,
+                      backgroundColor: severityStyle.text,
+                    },
                   ]}
                 />
               </View>
-              <Text style={styles.confidenceText}>
+              <Text style={[styles.confidencePct, { color: severityStyle.text }]}>
                 {confidencePercent.toFixed(1)}%
               </Text>
-            </View>
+            </SectionBlock>
 
-            <View style={styles.section}>
-              <Text style={commonStyles.sectionLabel}>Risk Level</Text>
-              <View style={styles.severityBadge}>
-                <Text style={styles.severityText}>{severity}</Text>
-              </View>
-            </View>
+            {/* About this condition */}
+            <SectionBlock title="About This Condition">
+              <Text style={styles.bodyText}>
+                {info?.description ??
+                  'No detailed description available. Please consult a dermatologist.'}
+              </Text>
+            </SectionBlock>
 
-            <View style={styles.section}>
-              <Text style={commonStyles.sectionLabel}>About this condition</Text>
-              <Text style={styles.description}>{descriptionText}</Text>
-            </View>
+            {/* Causes */}
+            {info?.causes && info.causes.length > 0 && (
+              <SectionBlock title="Common Causes">
+                <BulletList items={info.causes} />
+              </SectionBlock>
+            )}
 
-            <View style={styles.section}>
-              <Text style={commonStyles.sectionLabel}>Recommendations</Text>
-              {recommendationsArray.length > 0 ? (
-                recommendationsArray.map((rec, index) => (
-                  <View key={index} style={styles.recommendationItem}>
-                    <Text style={styles.bullet}>•</Text>
-                    <Text style={styles.recommendationText}>{rec}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.recommendationItem}>
-                  <Text style={styles.bullet}>•</Text>
-                  <Text style={styles.recommendationText}>
-                    Please consult a dermatologist for personalized
-                    recommendations.
-                  </Text>
-                </View>
-              )}
-            </View>
+            {/* Symptoms */}
+            {info?.symptoms && info.symptoms.length > 0 && (
+              <SectionBlock title="Symptoms to Know">
+                <BulletList items={info.symptoms} />
+              </SectionBlock>
+            )}
+
+            {/* What to observe */}
+            {info?.whatToObserve && info.whatToObserve.length > 0 && (
+              <SectionBlock title="What to Observe">
+                <BulletList items={info.whatToObserve} />
+              </SectionBlock>
+            )}
+
+            {/* Recommendations */}
+            <SectionBlock title="Recommendations">
+              <BulletList
+                items={
+                  info?.recommendations && info.recommendations.length > 0
+                    ? info.recommendations
+                    : ['Please consult a dermatologist for personalised advice.']
+                }
+              />
+            </SectionBlock>
+
+            {/* When to seek care */}
+            {info?.whenToSeekCare && (
+              <SectionBlock title="When to Seek Care">
+                <AlertBox text={info.whenToSeekCare} />
+              </SectionBlock>
+            )}
           </View>
 
+          {/* ── Action buttons ── */}
           <TouchableOpacity
             style={[
               commonStyles.primaryButton,
-              styles.buttonFull,
-              isGuest && styles.disabledDownloadButton,
+              styles.btnFull,
+              isGuest && styles.btnDisabled,
             ]}
             onPress={handleDownloadLatestReport}
           >
-            <Text
-              style={[
-                commonStyles.buttonText,
-                isGuest && styles.disabledDownloadButtonText,
-              ]}
-            >
+            <Text style={[commonStyles.buttonText, isGuest && styles.btnDisabledText]}>
               📄 Download Detailed Report PDF
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[commonStyles.secondaryButton, styles.buttonFull]}
+            style={[commonStyles.secondaryButton, styles.btnFull]}
             onPress={onFindDermatologists}
           >
-            <Text style={commonStyles.buttonText}>
-              🏥 Find Dermatologists Near You
-            </Text>
+            <Text style={commonStyles.buttonText}>🏥 Find Dermatologists Near You</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[commonStyles.tertiaryButton, styles.buttonFull]}
+            style={[commonStyles.tertiaryButton, styles.btnFull]}
             onPress={onBackToUpload}
           >
-            <Text style={commonStyles.buttonTextSecondary}>
-              ← Upload Another Image
-            </Text>
+            <Text style={commonStyles.buttonTextSecondary}>← Upload Another Image</Text>
           </TouchableOpacity>
         </View>
 
+        {/* ── Footer ── */}
         <View style={commonStyles.footer}>
           <Text style={commonStyles.disclaimer}>
-            ⚠️ Disclaimer: This is an AI prediction. Please consult a medical
-            professional for diagnosis.
+            ⚠️ Disclaimer: This is an AI prediction. Please consult a medical professional for diagnosis.
           </Text>
         </View>
       </ScrollView>
@@ -227,85 +291,133 @@ export default function InferencePage({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  pageScrollContent: {
+  scroll: {
     paddingBottom: 12,
   },
-  bodyPadding: {
+  body: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
     paddingVertical: 20,
   },
-  section: {
+
+  // Condition header row
+  conditionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 20,
+    gap: 10,
   },
   conditionName: {
-    fontSize: 24,
+    flex: 1,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.primary,
-    marginBottom: 20,
   },
+  severityBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  severityText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Confidence
   confidenceBar: {
     width: '100%',
     height: 10,
     backgroundColor: colors.borderLight,
     borderRadius: 5,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   confidenceFill: {
     height: '100%',
-    backgroundColor: colors.primary,
+    borderRadius: 5,
   },
-  confidenceText: {
-    fontSize: 16,
+  confidencePct: {
+    fontSize: 15,
     fontWeight: '700',
-    color: colors.primary,
     textAlign: 'right',
   },
-  severityBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.errorBg,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.errorBorder,
+
+  // Sections
+  section: {
+    marginBottom: 20,
   },
-  severityText: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 13,
     fontWeight: '700',
-    color: colors.errorText,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    paddingBottom: 4,
   },
-  description: {
+  bodyText: {
     fontSize: 14,
     color: colors.textTertiary,
-    lineHeight: 20,
+    lineHeight: 21,
   },
-  recommendationItem: {
+
+  // Bullets
+  bulletRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   bullet: {
     fontSize: 14,
     color: colors.primary,
     marginRight: 8,
     fontWeight: '700',
+    lineHeight: 21,
   },
-  recommendationText: {
+  bulletText: {
     flex: 1,
     fontSize: 14,
     color: colors.textTertiary,
-    lineHeight: 20,
+    lineHeight: 21,
   },
-  buttonFull: {
+
+  // Alert box
+  alertBox: {
+    flexDirection: 'row',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+  },
+  alertIcon: {
+    fontSize: 16,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400e',
+    lineHeight: 19,
+  },
+
+  // Buttons
+  btnFull: {
     width: '100%',
     maxWidth: 400,
     marginTop: 0,
     marginBottom: 12,
   },
-  disabledDownloadButton: {
+  btnDisabled: {
     backgroundColor: '#BDBDBD',
   },
-  disabledDownloadButtonText: {
+  btnDisabledText: {
     color: '#F5F5F5',
   },
 });

@@ -4,10 +4,13 @@ backend/app/services/ai_service.py
 
 import os
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions"
-MODEL              = "stepfun-ai/step-3-5-flash:free"
+MODEL              = "stepfun/step-3.5-flash:free"
 
 PROMPT = """\
 An AI skin analysis app detected {condition} in a patient's skin image with {pct}% confidence.
