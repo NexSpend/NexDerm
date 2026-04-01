@@ -225,12 +225,12 @@ class EnsembleDiseaseClassifier:
         for dense_weight, idx_tensor, conf_tensor in zip(dense_vote_weights, dense_idx, dense_conf):
             pred_idx = int(idx_tensor.item())
             vote_counts[pred_idx] += dense_weight
-            confidence_sums[pred_idx] += float(conf_tensor.item())
+            confidence_sums[pred_idx] += float(conf_tensor.item()) * dense_weight
 
         for resnet_weight, idx_tensor, conf_tensor in zip(resnet_vote_weights, res_idx, res_conf):
             pred_idx = int(idx_tensor.item())
             vote_counts[pred_idx] += resnet_weight
-            confidence_sums[pred_idx] += float(conf_tensor.item())
+            confidence_sums[pred_idx] += float(conf_tensor.item()) * resnet_weight
 
         ens_idx = max(
             vote_counts,
