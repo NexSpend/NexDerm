@@ -29,7 +29,7 @@ SEVERITY_COLORS = {
 }
 
 LOGO_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "frontend", "assets", "logo.png"
+    os.path.dirname(__file__), "..", "..", "..", "frontend", "assets", "logo-nobg.png"
 )
 
 W, H = letter
@@ -101,10 +101,12 @@ def _parse_sections(text: str) -> list:
 
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.upper() in SECTION_TITLES:
+        # Strip markdown bold/italic markers the model sometimes adds (e.g. **SUMMARY**)
+        clean = stripped.strip("*").strip("#").strip()
+        if clean.upper() in SECTION_TITLES:
             if current_title is not None:
                 sections.append((current_title, "\n".join(current_lines).strip()))
-            current_title = stripped.upper()
+            current_title = clean.upper()
             current_lines = []
         elif current_title is not None:
             current_lines.append(stripped)
@@ -124,15 +126,18 @@ def _draw_header(c, report_id_short, date_str):
     logo_drawn = False
     if os.path.exists(LOGO_PATH):
         try:
-            c.drawImage(LOGO_PATH, L, H - HDR_H + 14, width=40, height=40,
+            # Centre the 40-pt logo vertically in the header (header centre = H - HDR_H/2)
+            logo_y = H - HDR_H / 2 - 27          # bottom of 40-pt image → centre at H-36
+            c.drawImage(LOGO_PATH, L-15, logo_y, width=70, height=70,
                         mask="auto", preserveAspectRatio=True)
             logo_drawn = True
         except Exception:
             pass
 
     tx = L + (52 if logo_drawn else 0)
-    _text(c, tx, H - 30, "NexDerm", "Helvetica-Bold", 22, WHITE)
-    _text(c, tx, H - 46, "AI Skin Analysis Report", "Helvetica", 11, colors.HexColor("#a8c8f0"))
+    # Place both text baselines symmetrically around the header centre (H - 36)
+    _text(c, tx, H - 28, "NexDerm", "Helvetica-Bold", 22, WHITE)
+    _text(c, tx, H - 44, "AI Skin Analysis Report", "Helvetica", 11, colors.HexColor("#a8c8f0"))
     _text(c, R, H - 28, f"Report  {report_id_short}", "Helvetica", 9, WHITE, "right")
     _text(c, R, H - 42, date_str, "Helvetica", 9, colors.HexColor("#a8c8f0"), "right")
 

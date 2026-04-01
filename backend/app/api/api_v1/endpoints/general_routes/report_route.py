@@ -39,6 +39,10 @@ def get_latest_report(authorization: Optional[str] = Header(None)):
 
         report_id, prediction, confidence, s3_key, file_name, created_at = r
 
+        # Background task hasn't finished yet
+        if not s3_key or file_name == "pending":
+            raise HTTPException(status_code=202, detail="Report is still being generated. Please try again in a few seconds.")
+
         download_url = s3_service.generate_presigned_download_url(s3_key)
 
         return {
