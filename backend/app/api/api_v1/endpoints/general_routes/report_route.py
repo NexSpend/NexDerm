@@ -10,6 +10,45 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 s3_service = S3Service()
 
 
+@router.get("/{report_id}/download", summary="Get a fresh download URL for a specific report")
+def get_report_download_url(report_id: str, authorization: Optional[str] = Header(None)):
+    user_id = get_current_user_id(authorization)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT report_s3_key, report_file_name
+            FROM reports
+            WHERE id = %s AND user_id = %s;
+            """,
+            (report_id, user_id)
+        )
+
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Report not found")
+
+        s3_key, file_name = row
+
+        if not s3_key or file_name == "pending":
+            raise HTTPException(status_code=202, detail="Report is still being generated. Please try again in a few seconds.")
+
+        download_url = s3_service.generate_presigned_download_url(s3_key)
+
+        return {"download_url": download_url}
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @router.get("/latest", summary="Get the latest report for the logged-in user")
 def get_latest_report(authorization: Optional[str] = Header(None)):
     user_id = get_current_user_id(authorization)
