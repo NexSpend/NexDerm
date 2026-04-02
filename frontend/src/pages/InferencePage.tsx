@@ -21,6 +21,10 @@ import conditionData from '../data/conditionData.json';
 interface BackendResult {
   prediction: string;
   confidence: number;
+  confidence_percentage: number;
+  risk_level: string;
+  low_confidence_warning: string | null;
+  report_id?: string;
 }
 
 interface ConditionInfo {
@@ -52,7 +56,22 @@ interface InferencePageProps {
 const SEVERITY_STYLES: Record<string, { bg: string; border: string; text: string }> = {
   success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' },
   warning: { bg: '#fffbeb', border: '#fde68a', text: '#d97706' },
-  danger:  { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+  danger: { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+};
+
+const getSeverityColorFromRiskLevel = (
+  riskLevel: string
+): 'success' | 'warning' | 'danger' => {
+  switch (riskLevel) {
+    case 'No Risk':
+      return 'success';
+    case 'Low Risk':
+      return 'warning';
+    case 'High Risk':
+      return 'danger';
+    default:
+      return 'warning';
+  }
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -101,33 +120,38 @@ export default function InferencePage({
   userName = 'User',
 }: InferencePageProps) {
   const confidencePercent =
-    result.confidence <= 1 ? result.confidence * 100 : result.confidence;
+    typeof result.confidence_percentage === 'number'
+      ? result.confidence_percentage
+      : result.confidence <= 1
+        ? result.confidence * 100
+        : result.confidence;
 
   // Look up rich condition info from JSON; fall back gracefully
   const info: ConditionInfo | null =
     (conditionData as Record<string, ConditionInfo>)[result.prediction] ?? null;
 
-  const severityLabel  = info?.severity ?? (
-    confidencePercent >= 80 ? 'High Risk' :
-    confidencePercent >= 50 ? 'Moderate Risk' : 'Low Risk'
-  );
-  const severityColor  = info?.severityColor ?? 'warning';
-  const severityStyle  = SEVERITY_STYLES[severityColor];
+  const severityLabel = result.risk_level || info?.severity || 'Low Risk';
+  const severityColor = getSeverityColorFromRiskLevel(severityLabel);
+  const severityStyle = SEVERITY_STYLES[severityColor];
 
   const handleDownloadLatestReport = async () => {
     if (isGuest) {
       Alert.alert('Sign Up Required', 'Sign up or log in to download reports.');
       return;
     }
+
     try {
       const data = await getLatestReport();
+
       if (!data.download_url) {
         Alert.alert('Not Ready', 'Your report is still being generated. Please try again in a few seconds.');
         return;
       }
+
       const fileUri = FileSystem.documentDirectory + `nexderm-report-${Date.now()}.pdf`;
       const downloadResult = await FileSystem.downloadAsync(data.download_url, fileUri);
       const canShare = await Sharing.isAvailableAsync();
+
       if (canShare) {
         await Sharing.shareAsync(downloadResult.uri, {
           mimeType: 'application/pdf',
@@ -169,13 +193,20 @@ export default function InferencePage({
 
           {/* ── Result card ── */}
           <View style={commonStyles.cardWide}>
-
             {/* Condition name + severity badge */}
             <View style={styles.conditionRow}>
               <Text style={styles.conditionName}>
                 {info?.displayName ?? result.prediction ?? 'Unknown Condition'}
               </Text>
-              <View style={[styles.severityBadge, { backgroundColor: severityStyle.bg, borderColor: severityStyle.border }]}>
+              <View
+                style={[
+                  styles.severityBadge,
+                  {
+                    backgroundColor: severityStyle.bg,
+                    borderColor: severityStyle.border,
+                  },
+                ]}
+              >
                 <Text style={[styles.severityText, { color: severityStyle.text }]}>
                   {severityLabel}
                 </Text>
@@ -199,6 +230,13 @@ export default function InferencePage({
                 {confidencePercent.toFixed(1)}%
               </Text>
             </SectionBlock>
+
+            {/* Low confidence warning */}
+            {result.low_confidence_warning && (
+              <SectionBlock title="Uncertainty Notice">
+                <AlertBox text={result.low_confidence_warning} />
+              </SectionBlock>
+            )}
 
             {/* About this condition */}
             <SectionBlock title="About This Condition">
