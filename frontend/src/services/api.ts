@@ -1,6 +1,8 @@
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
 export const API_URL = "http://192.168.2.174:8000/api/v1";
@@ -417,5 +419,42 @@ export const submitDoctorReview = async (
   } catch (error) {
     console.error('Error submitting doctor review:', error);
     throw error;
+  }
+};
+
+export const downloadReportPdf = async (reportId: string): Promise<void> => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  if (!token) {
+    throw new Error('No logged-in user');
+  }
+
+  const response = await fetch(`${API_URL}/reports/${reportId}/download`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to get download URL (${response.status}): ${text}`);
+  }
+
+  const { download_url } = await response.json();
+  const fileUri = FileSystem.documentDirectory + `nexderm-report-${Date.now()}.pdf`;
+  const downloadResult = await FileSystem.downloadAsync(download_url, fileUri);
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(downloadResult.uri, {
+      mimeType: 'application/pdf',
+      dialogTitle: 'Download NexDerm Report',
+      UTI: 'com.adobe.pdf',
+    });
   }
 };

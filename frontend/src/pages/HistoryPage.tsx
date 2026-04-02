@@ -175,7 +175,7 @@ export default function HistoryPage({
             ) : null}
 
             {item.report_url ? (
-              <TouchableOpacity style={styles.reportButton} onPress={() => downloadReportPdf(item.report_url as string)}>
+              <TouchableOpacity style={styles.reportButton} onPress={() => downloadReportPdf(item.id)}>
                 <Text style={styles.reportButtonText}>Open Report PDF</Text>
               </TouchableOpacity>
             ) : null}
