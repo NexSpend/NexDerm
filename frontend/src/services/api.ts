@@ -4,8 +4,9 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
+
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.174:8000/api/v1";
+export const API_URL = "http://192.168.2.99:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -94,6 +95,10 @@ export const verifyOtpCodePublic = async (
 export interface PredictionResponse {
   prediction: string;
   confidence: number;
+  confidence_percentage: number;
+  risk_level: string;
+  low_confidence_warning: string | null;
+  report_id?: string;
 }
 
 export interface Dermatologist {
@@ -307,16 +312,14 @@ export const getMedicalHistory = async (): Promise<MedicalHistoryItem[]> => {
   }
 };
 
-
-
 export interface ProfileResponse {
   full_name: string;
   email: string;
 }
+
 /**
  * Interface for a pending case report.
  */
-
 export interface PendingCase {
   id: string;
   prediction: string;
