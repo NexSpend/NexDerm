@@ -21,9 +21,6 @@ import conditionData from '../data/conditionData.json';
 interface BackendResult {
   prediction: string;
   confidence: number;
-  recommendations?: string | string[];
-  description?: string;
-  severity?: string;
 }
 
 interface ConditionInfo {
