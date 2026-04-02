@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.108:8000/api/v1";
+export const API_URL = "http://192.168.2.174:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
@@ -89,16 +89,9 @@ export const verifyOtpCodePublic = async (
   return (await response.json()) as VerifyOtpResponse;
 };
 
-import { Alert, Linking } from 'react-native';
-
 export interface PredictionResponse {
   prediction: string;
   confidence: number;
-  recommendations: string;
-  model_outputs?: {
-    densenet: { prediction: string; confidence: number };
-    resnet: { prediction: string; confidence: number };
-  };
 }
 
 export interface Dermatologist {
@@ -313,20 +306,6 @@ export const getMedicalHistory = async (): Promise<MedicalHistoryItem[]> => {
 };
 
 
-export const downloadReportPdf = async (reportUrl: string) => {
-  try {
-    const supported = await Linking.canOpenURL(reportUrl);
-
-    if (!supported) {
-      throw new Error('Cannot open PDF URL');
-    }
-
-    await Linking.openURL(reportUrl);
-  } catch (error) {
-    console.error('Error opening PDF:', error);
-    Alert.alert('Error', 'Could not open report PDF');
-  }
-};
 
 export interface ProfileResponse {
   full_name: string;
