@@ -1,0 +1,494 @@
+{
+  "Actinic keratoses": {
+    "displayName": "Actinic Keratoses",
+    "severity": "Moderate Risk",
+    "severityColor": "warning",
+    "description": "Actinic keratoses (AK) are rough, scaly patches on the skin caused by years of sun exposure. They are considered precancerous — if left untreated, a small percentage can develop into squamous cell carcinoma. They most commonly appear on sun-exposed areas like the face, scalp, ears, neck, and hands.",
+    "causes": [
+      "Prolonged or repeated exposure to ultraviolet (UV) radiation from sunlight",
+      "Use of tanning beds or sunlamps",
+      "Fair skin, light hair, or light eyes (lower natural UV protection)",
+      "Weakened immune system (e.g., from medications or illness)",
+      "History of significant sunburns, especially in childhood"
+    ],
+    "symptoms": [
+      "Rough, dry, scaly patch of skin, usually less than 1 inch (2.5 cm) in diameter",
+      "Flat to slightly raised patch or bump on the top layer of skin",
+      "Hard, wart-like surface in some cases",
+      "Itching, burning, or tenderness in the affected area",
+      "Color ranging from pink to red to brown"
+    ],
+    "whatToObserve": [
+      "Whether the patch is growing in size or spreading to nearby areas",
+      "Any change in color — particularly darkening or developing multiple shades",
+      "Hardening, thickening, or crusting of the patch surface",
+      "New symptoms like bleeding, ulceration, or rapid growth (may indicate cancer)"
+    ],
+    "recommendations": [
+      "See a dermatologist promptly — treatment can prevent progression to skin cancer",
+      "Apply broad-spectrum SPF 30+ sunscreen daily to all exposed skin",
+      "Wear protective clothing, wide-brimmed hats, and UV-blocking sunglasses outdoors",
+      "Avoid direct sun during peak hours (10 AM – 4 PM)",
+      "Do not pick or scratch the patch as this can cause infection or scarring",
+      "Follow up regularly with a dermatologist for monitoring and retreatment if needed"
+    ],
+    "whenToSeekCare": "Seek urgent care if the patch bleeds spontaneously, grows rapidly, becomes very thick or hard, or develops an open sore — these signs may indicate cancer."
+  },
+
+  "Basal cell carcinoma": {
+    "displayName": "Basal Cell Carcinoma",
+    "severity": "High Risk",
+    "severityColor": "danger",
+    "description": "Basal cell carcinoma (BCC) is the most common form of skin cancer, arising from basal cells in the deepest layer of the epidermis. While it rarely spreads to other parts of the body, it can cause significant local tissue damage if left untreated. It is highly curable when detected and treated early.",
+    "causes": [
+      "Cumulative ultraviolet (UV) radiation exposure from sunlight over many years",
+      "History of severe or repeated sunburns, especially in childhood",
+      "Tanning bed use",
+      "Fair skin, freckles, or a tendency to burn rather than tan",
+      "Exposure to radiation therapy or certain chemicals (e.g., arsenic)"
+    ],
+    "symptoms": [
+      "A pearly or waxy bump, often on the face, ears, or neck",
+      "A flat, flesh-colored or brown scar-like lesion on the chest or back",
+      "A bleeding or scabbing sore that heals and then returns",
+      "Pink growth with raised edges and a crusted center",
+      "A white, waxy, scar-like lesion without a clearly defined border"
+    ],
+    "whatToObserve": [
+      "Any sore or spot that does not heal within 2–3 weeks",
+      "Changes in size, shape, or color of a skin lesion",
+      "A spot that bleeds easily when rubbed or bumped",
+      "Crusting, oozing, or formation of an open ulcer"
+    ],
+    "recommendations": [
+      "Consult a dermatologist or oncologist immediately for biopsy and treatment planning",
+      "Do not attempt to treat or remove the lesion yourself",
+      "Protect the area from further sun exposure using SPF 50+ sunscreen and clothing",
+      "Maintain a record of photos to track any changes before your appointment",
+      "Discuss treatment options: surgical excision, Mohs surgery, topical therapies, or radiation",
+      "Schedule regular full-body skin checks going forward"
+    ],
+    "whenToSeekCare": "Seek immediate medical attention if the lesion bleeds heavily, grows rapidly, becomes painful, or you notice similar lesions appearing elsewhere."
+  },
+
+  "Benign keratosis-like lesions": {
+    "displayName": "Benign Keratosis-like Lesions",
+    "severity": "Low Risk",
+    "severityColor": "success",
+    "description": "Benign keratosis-like lesions include seborrheic keratoses and similar non-cancerous growths. They appear as waxy, stuck-on-looking, wart-like patches that vary in color from light tan to dark brown or black. Though their appearance can be alarming, they are completely harmless and do not become cancerous.",
+    "causes": [
+      "Natural aging process — extremely common in adults over 50",
+      "Genetic predisposition (often runs in families)",
+      "Unknown exact triggers, but not caused by sun exposure or viruses",
+      "Hormonal changes may encourage their development"
+    ],
+    "symptoms": [
+      "Waxy, scaly, slightly raised growth that looks pasted or stuck onto the skin",
+      "Color ranging from light tan, brown, to almost black",
+      "Round or oval shape, typically 1 cm to 3 cm in diameter",
+      "May itch occasionally, especially if irritated by clothing",
+      "Can appear singly or in clusters across the chest, back, shoulders, or face"
+    ],
+    "whatToObserve": [
+      "Rapid change in size or color (should grow slowly, if at all)",
+      "Development of bleeding, oozing, or persistent crusting",
+      "Any lesion that looks distinctly different from others (the 'ugly duckling' sign)",
+      "New symptoms like pain or tenderness, which are unusual for benign keratoses"
+    ],
+    "recommendations": [
+      "No treatment is necessary unless the lesion is irritated, itchy, or bothersome",
+      "Consult a dermatologist if you are unsure whether the growth is benign",
+      "Removal options (cryotherapy, laser, or curettage) are available for cosmetic reasons",
+      "Avoid picking, scratching, or scrubbing the area",
+      "Moisturize regularly to reduce itchiness"
+    ],
+    "whenToSeekCare": "See a dermatologist if any lesion changes rapidly, bleeds, ulcerates, or if a new lesion looks markedly different from existing ones."
+  },
+
+  "Chickenpox": {
+    "displayName": "Chickenpox (Varicella)",
+    "severity": "Moderate Risk",
+    "severityColor": "warning",
+    "description": "Chickenpox is a highly contagious viral infection caused by the varicella-zoster virus (VZV). It produces a characteristic itchy, blister-like rash that spreads over the body. While usually mild in healthy children, it can cause serious complications in adults, newborns, pregnant women, and immunocompromised individuals.",
+    "causes": [
+      "Infection with the varicella-zoster virus (VZV)",
+      "Direct contact with the fluid from chickenpox blisters",
+      "Breathing in respiratory droplets from an infected person",
+      "Contact with someone who has shingles (reactivated VZV)",
+      "Being unvaccinated or not previously infected"
+    ],
+    "symptoms": [
+      "Itchy, red rash that begins as small spots and develops into fluid-filled blisters",
+      "Rash typically starts on the chest, back, and face, then spreads all over the body",
+      "Fever, fatigue, loss of appetite, and headache (1–2 days before the rash)",
+      "Blisters that break open and crust over within a few days",
+      "New crops of blisters appearing over several days"
+    ],
+    "whatToObserve": [
+      "Signs of secondary bacterial infection: increasing redness, warmth, swelling, or pus",
+      "Rash involving the eyes — requires urgent attention",
+      "Difficulty breathing or chest pain",
+      "Severe headache, stiff neck, or confusion, which may indicate serious complications"
+    ],
+    "recommendations": [
+      "Stay home and isolate until all blisters have crusted over (typically 5–7 days after rash onset)",
+      "Avoid scratching — keep nails short and wear cotton mittens if needed",
+      "Use calamine lotion or antihistamines (as advised) to relieve itching",
+      "Take lukewarm oatmeal baths to soothe the skin",
+      "Stay well-hydrated and rest adequately",
+      "Contact a doctor if you are an adult, pregnant, immunocompromised, or symptoms worsen"
+    ],
+    "whenToSeekCare": "Seek urgent care if you have difficulty breathing, confusion, a very high fever, a rash near the eyes, or signs of bacterial infection in blisters."
+  },
+
+  "Cowpox": {
+    "displayName": "Cowpox",
+    "severity": "Moderate Risk",
+    "severityColor": "warning",
+    "description": "Cowpox is a rare viral skin infection caused by the cowpox virus, a member of the Orthopoxvirus family. It typically spreads to humans through direct contact with infected animals (cats, rodents, cattle). The infection produces distinctive lesions and is generally self-limiting, but it can be serious in immunocompromised individuals.",
+    "causes": [
+      "Direct skin contact with an infected animal, most commonly cats or rodents",
+      "Less commonly, contact with infected cattle",
+      "The cowpox virus enters through breaks or cuts in the skin",
+      "Human-to-human transmission is very rare"
+    ],
+    "symptoms": [
+      "Red, inflamed spot at the site of infection that progresses to a blister within days",
+      "Blister fills with fluid, then pus, before crusting over (similar to a smallpox lesion)",
+      "Lesions are typically 1–3 on the hands, face, or arms",
+      "Surrounding skin becomes swollen and tender",
+      "Flu-like symptoms: fever, fatigue, swollen lymph nodes, and muscle aches"
+    ],
+    "whatToObserve": [
+      "Spreading of lesions to new areas of the body",
+      "Increasing redness, swelling, or pus suggesting secondary bacterial infection",
+      "Lesions near the eyes, which can cause serious eye damage",
+      "Systemic symptoms that worsen rather than improve over 2–3 weeks"
+    ],
+    "recommendations": [
+      "See a doctor to confirm the diagnosis — cowpox is rare and can be confused with other infections",
+      "Avoid touching or squeezing the lesions",
+      "Wash hands thoroughly and frequently to prevent spread",
+      "Keep the affected area clean and covered with a sterile dressing",
+      "Avoid contact with vulnerable individuals (infants, elderly, immunocompromised)",
+      "Do not apply over-the-counter creams without medical advice"
+    ],
+    "whenToSeekCare": "Seek prompt medical attention if lesions are near the eyes, if you are immunocompromised, or if you develop a high fever with systemic illness."
+  },
+
+  "Dermatofibroma": {
+    "displayName": "Dermatofibroma",
+    "severity": "Low Risk",
+    "severityColor": "success",
+    "description": "Dermatofibromas are common, benign (non-cancerous) skin growths that develop in the deeper layers of the skin. They are firm, brownish nodules most often found on the legs. The exact cause is unknown, but they are harmless and rarely require treatment unless they are cosmetically bothersome or uncomfortable.",
+    "causes": [
+      "Exact cause unknown; may develop in response to a minor injury (insect bite, splinter)",
+      "Overgrowth of fibrous tissue in the dermis",
+      "More common in women and in adults aged 20–40",
+      "Not caused by infection or sun exposure"
+    ],
+    "symptoms": [
+      "Small, firm bump under the skin surface, usually 0.5–1.5 cm in diameter",
+      "Color ranging from pink, tan, brown, or reddish-purple",
+      "Located most often on the lower legs, but can appear anywhere",
+      "Dimples inward when pinched (the 'dimple sign' — a key diagnostic feature)",
+      "Usually painless, though may be tender or itch occasionally"
+    ],
+    "whatToObserve": [
+      "Rapid growth in size over a short period",
+      "Change in color, especially darkening or becoming multicolored",
+      "Spontaneous bleeding or ulceration",
+      "Loss of the classic dimple sign (may warrant re-evaluation)"
+    ],
+    "recommendations": [
+      "No treatment is required if the lesion is not bothersome",
+      "Consult a dermatologist to confirm the diagnosis and rule out other conditions",
+      "Avoid repeatedly irritating or traumatizing the area",
+      "Surgical excision is available if the lesion causes pain, itching, or cosmetic concern",
+      "Do not attempt to remove it at home"
+    ],
+    "whenToSeekCare": "See a dermatologist if the nodule grows rapidly, changes significantly in appearance, bleeds, or if you develop multiple new similar growths unexpectedly."
+  },
+
+  "HFMD": {
+    "displayName": "Hand, Foot & Mouth Disease (HFMD)",
+    "severity": "Moderate Risk",
+    "severityColor": "warning",
+    "description": "Hand, Foot, and Mouth Disease (HFMD) is a common, contagious viral illness primarily affecting children under 5, though adults can also be infected. It is caused by enteroviruses (most commonly Coxsackievirus A16). The disease is generally mild and self-limiting, resolving within 7–10 days.",
+    "causes": [
+      "Infection with enteroviruses, most commonly Coxsackievirus A16 or Enterovirus 71",
+      "Direct contact with an infected person's saliva, blister fluid, feces, or nasal secretions",
+      "Touching contaminated surfaces and then touching the face",
+      "Most contagious during the first week of illness",
+      "Common in childcare settings, schools, and crowded environments"
+    ],
+    "symptoms": [
+      "Fever, reduced appetite, sore throat, and general malaise (1–2 days before rash)",
+      "Painful sores or ulcers in the mouth (tongue, gums, inside cheeks)",
+      "Flat or raised red spots or blisters on the palms of the hands and soles of the feet",
+      "Rash may also appear on the buttocks, knees, and elbows",
+      "Children may refuse to eat or drink due to mouth pain"
+    ],
+    "whatToObserve": [
+      "Dehydration signs: dry mouth, no tears when crying, sunken eyes, reduced urination",
+      "High or persistent fever lasting more than 3 days",
+      "Rapid worsening of symptoms or unusual sleepiness/irritability",
+      "Nail loss or change (can occur several weeks after infection — usually temporary)"
+    ],
+    "recommendations": [
+      "Isolate the affected person from school, childcare, or work until fever-free and sores have healed",
+      "Offer cold fluids, ice cream, or yogurt to soothe mouth pain and maintain hydration",
+      "Use over-the-counter pain relievers (paracetamol/ibuprofen) for fever and pain as directed",
+      "Rinse mouth with warm salt water to ease sore mouth symptoms",
+      "Wash hands frequently with soap and water, especially after diaper changes",
+      "Disinfect frequently touched surfaces and objects"
+    ],
+    "whenToSeekCare": "Seek urgent care if the child shows signs of dehydration, has a very high or persistent fever, is unusually drowsy or limp, or if symptoms worsen significantly after initial improvement."
+  },
+
+  "Healthy": {
+    "displayName": "Healthy Skin",
+    "severity": "No Risk",
+    "severityColor": "success",
+    "description": "The AI analysis did not detect any significant skin condition in the submitted image. The skin appears healthy with no visible signs of a lesion, rash, or abnormality. While this is a reassuring result, it is not a substitute for a clinical examination by a qualified dermatologist.",
+    "causes": [],
+    "symptoms": [
+      "No concerning lesions or abnormalities detected in this image",
+      "Skin tone and texture appear within normal range"
+    ],
+    "whatToObserve": [
+      "Any new moles, spots, or growths that appear or change over time",
+      "Persistent itching, redness, or irritation in any area of the skin",
+      "Sores that do not heal within 2–3 weeks",
+      "Changes to existing moles using the ABCDE rule (Asymmetry, Border, Color, Diameter, Evolving)"
+    ],
+    "recommendations": [
+      "Maintain a daily skincare routine with gentle cleansing and moisturizing",
+      "Apply broad-spectrum SPF 30+ sunscreen every day, even when it is cloudy",
+      "Perform monthly self-examinations to stay familiar with your skin",
+      "Schedule an annual full-body skin check with a dermatologist",
+      "Stay hydrated and follow a balanced diet to support skin health",
+      "Avoid tanning beds and minimize peak-hours sun exposure"
+    ],
+    "whenToSeekCare": "Consult a dermatologist if you notice any new or changing skin spots, persistent rashes, or lesions that itch, bleed, or do not heal."
+  },
+
+  "Measles": {
+    "displayName": "Measles (Rubeola)",
+    "severity": "High Risk",
+    "severityColor": "danger",
+    "description": "Measles is a highly contagious viral infection caused by the measles virus (a paramyxovirus). It is characterised by a distinctive red rash that spreads from the face downwards. Measles is a major cause of childhood morbidity and mortality worldwide and can lead to serious complications including pneumonia, encephalitis, and death.",
+    "causes": [
+      "Infection with the measles virus (Morbillivirus)",
+      "Breathing in respiratory droplets from an infected person's cough or sneeze",
+      "The virus can remain airborne in a room for up to 2 hours after an infected person leaves",
+      "Being unvaccinated or incompletely vaccinated (less than 2 doses of MMR vaccine)",
+      "Travel to or contact with individuals from areas with active outbreaks"
+    ],
+    "symptoms": [
+      "High fever (often above 40°C / 104°F)",
+      "Cough, runny nose, and red, watery eyes (conjunctivitis) — the '3 Cs'",
+      "Koplik's spots: tiny white spots inside the mouth, appearing 2–3 days before the rash",
+      "A red, blotchy rash that begins on the face and spreads downwards to the neck, trunk, arms, and legs",
+      "General malaise, loss of appetite, and lymph node swelling"
+    ],
+    "whatToObserve": [
+      "Difficulty breathing or fast breathing (may indicate pneumonia)",
+      "Severe headache, stiff neck, confusion, or seizures (may indicate encephalitis)",
+      "Ear pain or discharge (ear infection complication)",
+      "Signs of severe dehydration, particularly in young children"
+    ],
+    "recommendations": [
+      "Isolate immediately — measles is one of the most contagious diseases known",
+      "Contact a doctor or public health authority right away",
+      "Rest, stay hydrated, and take paracetamol/ibuprofen to manage fever (never aspirin in children)",
+      "Vitamin A supplementation is recommended for children with measles to reduce severity",
+      "Ensure all household contacts who are unvaccinated receive the MMR vaccine urgently",
+      "Report the case to local public health authorities as required by law in most regions"
+    ],
+    "whenToSeekCare": "Seek emergency care immediately if you or a child has difficulty breathing, seizures, confusion, loss of consciousness, or severe ear pain alongside a measles rash."
+  },
+
+  "Melanocytic nevi": {
+    "displayName": "Melanocytic Nevi (Moles)",
+    "severity": "Low Risk",
+    "severityColor": "success",
+    "description": "Melanocytic nevi, commonly known as moles, are benign growths formed by clusters of melanocytes (pigment-producing cells). Most people have between 10 and 40 moles. While the vast majority are completely harmless, regular monitoring is important as some moles can undergo changes and, rarely, develop into melanoma.",
+    "causes": [
+      "Genetic predisposition — tendency to develop moles is inherited",
+      "UV radiation exposure, especially in childhood and adolescence, can trigger new moles",
+      "Hormonal changes (puberty, pregnancy) can cause moles to darken or enlarge slightly",
+      "Fair skin individuals tend to have more moles"
+    ],
+    "symptoms": [
+      "Small, round or oval brown, tan, or skin-colored spots on the skin",
+      "Usually flat or slightly raised with smooth, regular borders",
+      "Typically uniform in color and less than 6 mm in diameter",
+      "Generally stable in size and appearance over years",
+      "Usually painless; may rarely itch if irritated by clothing or jewellery"
+    ],
+    "whatToObserve": [
+      "Asymmetry: one half of the mole does not match the other",
+      "Border irregularity: edges are ragged, notched, or blurred",
+      "Color variation: multiple shades of brown, black, red, white, or blue within one mole",
+      "Diameter: the mole becomes larger than 6 mm (about the size of a pencil eraser)",
+      "Evolving: any change in size, shape, color, or a mole that starts to bleed or itch"
+    ],
+    "recommendations": [
+      "Perform a monthly skin self-examination in good lighting using a mirror",
+      "Use the ABCDE rule (Asymmetry, Border, Color, Diameter, Evolving) to assess each mole",
+      "See a dermatologist annually for a professional full-body skin check",
+      "Photograph moles periodically to track any changes over time",
+      "Apply sunscreen daily and avoid peak UV hours to reduce further mole development",
+      "Report any concerning changes to a dermatologist promptly"
+    ],
+    "whenToSeekCare": "See a dermatologist immediately if a mole bleeds, itches, changes rapidly in size or shape, develops irregular borders, or looks strikingly different from your other moles."
+  },
+
+  "Melanoma": {
+    "displayName": "Melanoma",
+    "severity": "High Risk",
+    "severityColor": "danger",
+    "description": "Melanoma is the most serious and aggressive form of skin cancer, arising from melanocytes. Although it accounts for only about 1% of all skin cancers, it causes the majority of skin cancer deaths due to its tendency to metastasize to other organs. Early detection and treatment are critical — when caught early, melanoma is highly treatable; advanced melanoma is much harder to cure.",
+    "causes": [
+      "Ultraviolet (UV) radiation from sunlight and tanning beds",
+      "History of severe, blistering sunburns — especially in childhood",
+      "Having many moles (more than 50) or atypical (dysplastic) moles",
+      "Personal or family history of melanoma",
+      "Fair skin, light hair, light eyes, and freckles",
+      "Weakened immune system"
+    ],
+    "symptoms": [
+      "A mole that changes in size, shape, or color",
+      "A lesion with irregular, ragged, or notched borders",
+      "A spot with multiple colors (brown, black, red, white, or blue)",
+      "A lesion larger than 6 mm (pencil eraser) or growing in size",
+      "A mole that itches, bleeds, oozes, or does not heal"
+    ],
+    "whatToObserve": [
+      "Any mole or skin spot that is changing, growing, or looks different from others",
+      "New spots that appear and do not look like any other spots on your body",
+      "Lesions that feel different: raised, bumpy, or tender",
+      "Swollen lymph nodes near the suspicious lesion"
+    ],
+    "recommendations": [
+      "See a dermatologist or oncologist URGENTLY — do not delay",
+      "Do not attempt any home treatment or removal",
+      "Avoid sun exposure on the lesion; cover it with a bandage if possible",
+      "Document the lesion with clear photographs before your appointment",
+      "Be prepared to discuss your family history of skin cancer and your sun exposure history",
+      "Ask about dermoscopy, biopsy, and sentinel lymph node procedures"
+    ],
+    "whenToSeekCare": "Seek emergency dermatology consultation immediately. Melanoma is time-sensitive — same-day or next-day assessment is strongly recommended if this diagnosis is suspected."
+  },
+
+  "Monkeypox": {
+    "displayName": "Monkeypox (Mpox)",
+    "severity": "High Risk",
+    "severityColor": "danger",
+    "description": "Monkeypox (mpox) is a viral zoonotic disease caused by the monkeypox virus, an Orthopoxvirus. It causes a distinctive rash with lesions progressing through stages (macule → papule → vesicle → pustule → scab). Since 2022, it has been declared a global health emergency by the WHO due to widespread human-to-human transmission. Early identification and isolation are essential.",
+    "causes": [
+      "Infection with the monkeypox virus (Orthopoxvirus genus)",
+      "Close physical contact with an infected person, including skin-to-skin contact",
+      "Contact with infected body fluids, lesion material, or respiratory secretions",
+      "Contact with contaminated bedding, clothing, or towels",
+      "Contact with infected animals (rodents, primates) in endemic regions"
+    ],
+    "symptoms": [
+      "Fever, headache, muscle aches, backache, swollen lymph nodes, and exhaustion",
+      "A distinctive rash appearing 1–5 days after fever onset",
+      "Lesions progressing through stages: flat spots → raised bumps → fluid-filled blisters → pustules → scabs",
+      "Lesions may appear on the face, hands, feet, genitals, mouth, and body",
+      "Lesions at the same stage of development (unlike chickenpox where stages differ)"
+    ],
+    "whatToObserve": [
+      "Rapid spread of lesions to new areas of the body",
+      "Lesions involving the eyes (can cause vision loss)",
+      "Difficulty swallowing or breathing if lesions develop in the throat",
+      "Signs of secondary bacterial infection: excessive redness, swelling, or pus"
+    ],
+    "recommendations": [
+      "Isolate immediately and contact your doctor or public health authority",
+      "Do not attend work, school, or public places until all scabs have fallen off",
+      "Cover all lesions with clothing or bandages to prevent spread",
+      "Avoid close contact, shared items, and sexual contact until fully recovered",
+      "Wear a mask when around others, particularly in enclosed spaces",
+      "Report to local health authorities — mpox is a notifiable disease in most countries"
+    ],
+    "whenToSeekCare": "Seek urgent medical care if you have lesions near the eyes or genitals, difficulty breathing or swallowing, high fever with rapid worsening, or any signs of severe systemic illness."
+  },
+
+  "Squamous cell carcinoma": {
+    "displayName": "Squamous Cell Carcinoma",
+    "severity": "High Risk",
+    "severityColor": "danger",
+    "description": "Squamous cell carcinoma (SCC) is the second most common form of skin cancer, arising from squamous cells in the outer layers of the skin. Unlike basal cell carcinoma, SCC has a greater tendency to spread (metastasize) to lymph nodes and distant organs if not treated promptly. Early treatment offers a very high cure rate.",
+    "causes": [
+      "Cumulative UV radiation exposure from sun and tanning beds",
+      "History of precancerous lesions such as actinic keratoses",
+      "Chronic skin inflammation, scarring, or long-standing wounds",
+      "Infection with certain strains of human papillomavirus (HPV)",
+      "Weakened immune system (e.g., organ transplant recipients, HIV)",
+      "Exposure to carcinogens such as arsenic, radiation, or industrial chemicals"
+    ],
+    "symptoms": [
+      "A firm, red nodule on sun-exposed skin (face, ears, lips, hands)",
+      "A flat lesion with a scaly, crusted surface",
+      "A new sore or raised area on an old scar or ulcer",
+      "A rough, scaly patch on the lip that may become an open sore",
+      "A red sore or rough patch inside the mouth or on the genitals"
+    ],
+    "whatToObserve": [
+      "Any sore that does not heal within 3 weeks",
+      "Growth, hardening, or crusting of an existing skin lesion",
+      "Swollen, firm lymph nodes near the lesion",
+      "Numbness, pain, or weakness around the lesion (may indicate nerve involvement)"
+    ],
+    "recommendations": [
+      "See a dermatologist or oncologist urgently for biopsy and staging",
+      "Do not delay — SCC can spread if treatment is postponed",
+      "Protect the lesion from further UV damage with high-SPF sunscreen and clothing",
+      "Document the lesion with photographs and note any growth or changes",
+      "Discuss treatment options: surgical excision, Mohs micrographic surgery, radiation, or immunotherapy",
+      "Follow up closely after treatment — SCC has a significant recurrence rate"
+    ],
+    "whenToSeekCare": "Seek urgent specialist care — do not delay more than a few days. Swollen lymph nodes near the lesion require immediate evaluation as they may indicate metastasis."
+  },
+
+  "Vascular lesions": {
+    "displayName": "Vascular Lesions",
+    "severity": "Low Risk",
+    "severityColor": "success",
+    "description": "Vascular lesions are abnormalities of blood vessels visible on or near the skin surface. They encompass a wide variety of conditions including cherry angiomas, spider angiomas, port-wine stains, hemangiomas, and telangiectasias. Most are benign and harmless, though their appearance can be a concern, and in some cases they may indicate an underlying systemic condition.",
+    "causes": [
+      "Genetic or developmental abnormalities in blood vessel formation",
+      "Aging — cherry angiomas and spider veins become more common with age",
+      "Sun damage causing superficial telangiectasias",
+      "Hormonal changes during pregnancy or due to birth control pills",
+      "Liver disease can cause spider angiomas (multiple may signal a problem)",
+      "Trauma or injury causing localized blood vessel overgrowth"
+    ],
+    "symptoms": [
+      "Small, bright red dome-shaped dots (cherry angiomas) — very common and harmless",
+      "Spider-like vessels radiating from a central point (spider angiomas)",
+      "Flat, deep red or purple birthmark-like patches (port-wine stains)",
+      "Bluish or reddish raised growths (hemangiomas), particularly in infants",
+      "Fine, dilated red or purple lines on the face or legs (telangiectasias)"
+    ],
+    "whatToObserve": [
+      "Rapid increase in the number or size of vascular lesions",
+      "Bleeding from a lesion that does not stop with gentle pressure",
+      "Multiple new spider angiomas appearing suddenly — may indicate liver disease",
+      "A lesion that changes color, becomes raised, or shows signs of ulceration"
+    ],
+    "recommendations": [
+      "Consult a dermatologist to confirm the type of vascular lesion",
+      "Most require no treatment — monitoring is sufficient for benign lesions",
+      "Laser therapy, sclerotherapy, or other procedures can remove lesions for cosmetic reasons",
+      "If multiple spider angiomas appear suddenly, ask your doctor to check liver function",
+      "Apply sunscreen daily to prevent UV-related telangiectasias from worsening",
+      "Avoid heat and alcohol, which can dilate blood vessels and worsen redness"
+    ],
+    "whenToSeekCare": "See a doctor if a vascular lesion bleeds significantly, grows rapidly, becomes painful, or if you develop a sudden crop of new lesions — particularly spider angiomas — which can signal an underlying medical condition."
+  }
+}
