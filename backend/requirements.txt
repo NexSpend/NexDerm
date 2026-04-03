@@ -21,3 +21,5 @@ boto3
 reportlab
 transformers
 resend
+pytest
+httpx
