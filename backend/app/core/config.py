@@ -1,5 +1,6 @@
 from typing import Optional, Set
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
@@ -59,10 +60,10 @@ class Settings(BaseSettings):
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"
+    model_config = ConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        extra="ignore")
 
 
 
