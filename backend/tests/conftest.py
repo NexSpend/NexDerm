@@ -1,4 +1,5 @@
 import io
+import importlib
 import os
 import sys
 import types
@@ -35,6 +36,11 @@ def _set_test_env() -> None:
     }
     for key, value in defaults.items():
         os.environ.setdefault(key, value)
+
+    # Guard against invalid API prefix values coming from shell env or CI settings.
+    os.environ.setdefault("API_V1_STR", "/api/v1")
+    if not os.environ["API_V1_STR"].startswith("/"):
+        os.environ["API_V1_STR"] = f"/{os.environ['API_V1_STR']}"
 
 
 def _install_external_service_stubs() -> None:
@@ -103,12 +109,77 @@ def _install_external_service_stubs() -> None:
     # app.services.model_service stub (avoids torch/model checkpoint load at import time)
     model_module = types.ModuleType("app.services.model_service")
 
-    class _DummyModelService:
-        def smart_predict(self, image):
+    class EnsembleDiseaseClassifier:
+        def __init__(self, config=None):
+            self.config = config or {}
+
+        def load_from_checkpoints(self, densenet_paths, resnet_paths):
+            self.densenet_paths = densenet_paths
+            self.resnet_paths = resnet_paths
+
+    class SkinFilterWrapper:
+        def __init__(self, disease_ensemble, threshold=0.7):
+            self.disease_ensemble = disease_ensemble
+            self.threshold = threshold
+
+        @staticmethod
+        def smart_predict(image):
             return {"is_skin": True, "prediction": "eczema", "confidence": 0.91}
 
-    model_module.model_service = _DummyModelService()
+    class _DummyModelPipeline:
+        @staticmethod
+        def smart_predict(image):
+            return {"is_skin": True, "prediction": "eczema", "confidence": 0.91}
+
+    class ModelService:
+        _instance = None
+        classifier_pipeline = None
+
+        def __new__(cls):
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance.classifier_pipeline = cls._load_model_pipeline()
+            return cls._instance
+
+        @staticmethod
+        def _load_model_pipeline():
+            artifacts_dir = Path("app/models/ml/artifacts")
+            ensemble_cls = getattr(model_module, "EnsembleDiseaseClassifier")
+            wrapper_cls = getattr(model_module, "SkinFilterWrapper")
+            ensemble = ensemble_cls(config={"device": "cpu", "w_dense": 0.5, "w_resnet": 0.5})
+            ensemble.load_from_checkpoints(
+                [
+                    artifacts_dir / "densenet121_skin_best1.pth",
+                    artifacts_dir / "densenet121_skin_best2.pth",
+                    artifacts_dir / "densenet121_skin_best3.pth",
+                    artifacts_dir / "densenet121_skin_best4.pth",
+                    artifacts_dir / "densenet121_skin_best5.pth",
+                ],
+                [
+                    artifacts_dir / "resnet50_skin_best1.pth",
+                    artifacts_dir / "resnet50_skin_best2.pth",
+                    artifacts_dir / "resnet50_skin_best3.pth",
+                    artifacts_dir / "resnet50_skin_best4.pth",
+                    artifacts_dir / "resnet50_skin_best5.pth",
+                ],
+            )
+            return wrapper_cls(disease_ensemble=ensemble, threshold=0.7)
+
+        def smart_predict(self, image):
+            if self.classifier_pipeline is None:
+                raise RuntimeError("Model pipeline is not loaded.")
+            return self.classifier_pipeline.smart_predict(image)
+
+    model_module.ModelService = ModelService
+    model_module.EnsembleDiseaseClassifier = EnsembleDiseaseClassifier
+    model_module.SkinFilterWrapper = SkinFilterWrapper
+    model_module.model_service = ModelService()
     sys.modules["app.services.model_service"] = model_module
+    try:
+        import app.services as services_pkg
+        setattr(services_pkg, "model_service", model_module)
+    except Exception:
+        pass
 
     # app.services.report_service stub
     report_module = types.ModuleType("app.services.report_service")
@@ -158,8 +229,36 @@ _set_test_env()
 _install_external_service_stubs()
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "integration: Cross-layer integration smoke tests with mocked externals.")
+
+
 @pytest.fixture(scope="session")
 def app_instance():
+    # model_test injects a mocked app.core.config module during collection.
+    # For app startup tests, force a real config module so route paths are valid.
+    config_module = sys.modules.get("app.core.config")
+    if config_module is not None and "unittest.mock" in type(config_module).__module__:
+        del sys.modules["app.core.config"]
+        importlib.invalidate_caches()
+        importlib.import_module("app.core.config")
+
+    config_module = sys.modules.get("app.core.config")
+    if config_module is not None:
+        settings_obj = getattr(config_module, "settings", None)
+        api_prefix = getattr(settings_obj, "API_V1_STR", None)
+        if not isinstance(api_prefix, str):
+            try:
+                settings_obj.API_V1_STR = "/api/v1"
+            except Exception:
+                pass
+        elif not api_prefix.startswith("/"):
+            settings_obj.API_V1_STR = f"/{api_prefix}"
+
+    # If a broken partially-imported app.main exists from previous failed collection, clear it.
+    if "app.main" in sys.modules:
+        importlib.reload(sys.modules["app.main"])
+
     from app.main import app
 
     return app
