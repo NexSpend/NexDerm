@@ -6,3 +6,8 @@
 .venv/
 __pycache__/
 .vscode/
+
+# Python test and coverage artifacts
+.pytest_cache/
+.coverage
+coverage.xml

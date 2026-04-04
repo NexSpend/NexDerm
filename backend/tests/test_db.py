@@ -1,19 +1,13 @@
 import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from datetime import datetime
-
-# Import your FastAPI app
-from app.main import app 
-
-client = TestClient(app)
 
 # ---------------------------------------------------------
 # TEST 1: Fetch Pending Cases (Success Path)
 # ---------------------------------------------------------
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
-def test_get_pending_cases_success(mock_get_current_user, mock_get_connection):
+def test_get_pending_cases_success(mock_get_current_user, mock_get_connection, client):
     mock_get_current_user.return_value = "fake-doctor-uuid"
 
     mock_conn = MagicMock()
@@ -41,7 +35,7 @@ def test_get_pending_cases_success(mock_get_current_user, mock_get_connection):
 # ---------------------------------------------------------
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
-def test_submit_doctor_review_success(mock_get_current_user, mock_get_connection):
+def test_submit_doctor_review_success(mock_get_current_user, mock_get_connection, client):
     mock_get_current_user.return_value = "fake-doctor-uuid"
 
     mock_conn = MagicMock()
@@ -78,7 +72,7 @@ def test_submit_doctor_review_success(mock_get_current_user, mock_get_connection
 # ---------------------------------------------------------
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
-def test_database_connection_failure(mock_get_current_user, mock_get_connection):
+def test_database_connection_failure(mock_get_current_user, mock_get_connection, client):
     mock_get_current_user.return_value = "fake-doctor-uuid"
     
     # Force the database connection to throw an exception

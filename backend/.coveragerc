@@ -1,0 +1,11 @@
+[run]
+branch = True
+source = app
+omit =
+    app/models/ml/*
+    app/models/db/*
+
+[report]
+show_missing = True
+skip_covered = False
+precision = 2
