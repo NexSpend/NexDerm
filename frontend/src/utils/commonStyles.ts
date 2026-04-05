@@ -1,5 +1,10 @@
 import { StyleSheet } from 'react-native';
+/**
+This is the main CSS file for the project.
+This file contains common styles and a centralized color palette for the NexDerm app.
+ */
 
+// Centralized color palette
 export const colors = {
   primary: "#004aad",
   secondary: "#007b83",
@@ -34,7 +39,7 @@ export const commonStyles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // HEADER (Reusable)
+  // Header
   header: {
     alignItems: "center",
     paddingTop: 12,
@@ -50,7 +55,7 @@ export const commonStyles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
-  // BODY (Reusable)
+  // Body
   body: {
     flex: 1,
     alignItems: "center",
@@ -58,7 +63,7 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  // Cards (Reusable)
+  // Cards
   card: {
     width: 280,
     borderRadius: 16,
@@ -91,7 +96,7 @@ export const commonStyles = StyleSheet.create({
     elevation: 2,
   },
 
-  // Image Preview Box (Reusable)
+  // Image Preview Box 
   imageBox: {
     width: 280,
     height: 280,
@@ -122,7 +127,7 @@ export const commonStyles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Input Fields (Reusable)
+  // Input Fields 
   inputGroup: {
     marginBottom: 16,
   },
@@ -142,7 +147,7 @@ export const commonStyles = StyleSheet.create({
     color: colors.textPrimary,
   },
 
-  // Buttons (Reusable)
+  // Buttons 
   primaryButton: {
     backgroundColor: colors.primary,
     paddingVertical: 20,
@@ -178,14 +183,14 @@ export const commonStyles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Links (Reusable)
+  // Links 
   linkText: {
     color: colors.primary,
     fontSize: 14,
     fontWeight: "600",
   },
 
-  // Section Labels (Reusable)
+  // Section Labels 
   sectionLabel: {
     fontSize: 14,
     fontWeight: "600",
@@ -193,7 +198,7 @@ export const commonStyles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // FOOTER (Reusable)
+  // Footer
   footer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -204,7 +209,7 @@ export const commonStyles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Doctor Portal Specific Styles
+  // Doctor Portal Styles
   doctorDashboardContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -222,13 +227,14 @@ export const commonStyles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.white,
-    marginLeft: 10, // Adjust for logout button
+    marginLeft: 10, 
   },
   doctorDashboardSubtitle: {
     fontSize: 16,
     color: colors.white,
     marginTop: 4,
   },
+  // Case List 
   caseListContainer: {
     flex: 1,
     padding: 10,
@@ -266,7 +272,7 @@ export const commonStyles = StyleSheet.create({
     marginBottom: 10,
   },
   reviewTextInput: {
-    backgroundColor: colors.inputBg, // Changed from inputBackground to inputBg as per commonStyles
+    backgroundColor: colors.inputBg, 
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -277,7 +283,7 @@ export const commonStyles = StyleSheet.create({
   },
   reviewTextInputMultiline: {
     minHeight: 100,
-    textAlignVertical: 'top', // For Android to align text at the top
+    textAlignVertical: 'top', 
   },
   reviewButtonContainer: {
     marginTop: 20,

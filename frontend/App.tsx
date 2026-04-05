@@ -1,3 +1,4 @@
+// importing components and libraries
 import React, { useState, useRef, useEffect } from "react";
 import {
   SafeAreaView,
@@ -26,14 +27,21 @@ import { commonStyles } from './src/utils/commonStyles';
 import { uploadImage } from './src/services/api';
 import LoadingScreen from "./src/pages/LoadingScreen";
 
+/**
+The Root Application Component for NexDerm.
+Acts as the primary navigation controller and global state manager. 
+It handles the user's authentication session, dictates whether they see the patient 
+dashboard or doctor dashboard, and manages the flow of the image upload/inference process.
+@returns {JSX.Element} The rendered active screen based on current state.
+*/
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null); 
+  const [isGuest, setIsGuest] = useState(false); // To track if the user is in guest mode
   const [showInference, setShowInference] = useState(false);
   const [inferenceResult, setInferenceResult] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For showing loading screen during inference
   const [showAccount, setShowAccount] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -41,6 +49,9 @@ export default function App() {
   const [userName, setUserName] = useState('User');
   const [showDermatologistMap, setShowDermatologistMap] = useState(false);
 
+/**
+Synchronizes the user's display name from Supabase.
+*/
   const syncUserName = async () => {
     try {
       const {
@@ -52,7 +63,7 @@ export default function App() {
         setUserName('User');
         return;
       }
-
+      // Pulling name from Metadata
       const metadataName =
         user.user_metadata?.full_name ||
         [user.user_metadata?.first_name, user.user_metadata?.last_name]
@@ -65,6 +76,7 @@ export default function App() {
         return;
       }
 
+      // Pulling name from Supabase 
       const { data: profileData, error: profileError } = await supabase
         .from('newUsers')
         .select('full_name')
@@ -89,7 +101,7 @@ export default function App() {
   useEffect(() => {
     // IMPORTANT:
     // Do not auto-log the user into the app just because Supabase has a session.
-    // Otherwise signInWithPassword() will bypass your custom OTP/MFA step.
+    // Otherwise signInWithPassword() will bypass the OTP/MFA step.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -117,6 +129,9 @@ export default function App() {
     }
   }, [isAuthenticated, isGuest]);
 
+/**
+Resets all navigation flags and volatile state to their default false/null values.
+*/
   const resetNavigationState = () => {
     setShowAccount(false);
     setShowProfile(false);
@@ -129,6 +144,9 @@ export default function App() {
     setUserRole(null);
   };
 
+/**
+Handles user sign-out by terminating the Supabase session and resetting global state.
+*/
   const handleBackToSignup = async () => {
     try {
       await supabase.auth.signOut();
@@ -155,6 +173,10 @@ export default function App() {
     resetNavigationState();
   };
 
+/**
+Helper to display an alert block for guest users trying to access protected routes.
+@param {string} featureName - The name of the feature being blocked.
+*/
   const handleGuestBlockedFeature = (featureName: string) => {
     Alert.alert(
       'Sign Up Required',
@@ -162,6 +184,7 @@ export default function App() {
     );
   };
 
+// Blocks guest access to profile page
   const handleShowProfile = () => {
     if (isGuest) {
       handleGuestBlockedFeature('your profile');
@@ -172,6 +195,7 @@ export default function App() {
     setShowProfile(true);
   };
 
+// Blocks guest access to history page
   const handleShowHistory = () => {
     if (isGuest) {
       handleGuestBlockedFeature('your history');
@@ -182,6 +206,9 @@ export default function App() {
     setShowHistory(true);
   };
 
+/**
+* Creates a pan responder to handle global swipe gestures.
+*/
   const createSwipeGestureHandler = () => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -189,10 +216,12 @@ export default function App() {
       onPanResponderRelease: (
         evt: GestureResponderEvent,
         gestureState: PanResponderGestureState
-      ) => {
+      ) => { 
+        // Set to standard thresholds for swipe detection on mobile
         const swipeThreshold = 50;
         const swipeVelocity = 0.5;
 
+        // Detect right swipe to go back to signup/auth page
         if (
           gestureState.dx > swipeThreshold &&
           gestureState.vx > swipeVelocity
@@ -209,6 +238,9 @@ export default function App() {
     }
   }, []);
 
+/**
+Requests media library permissions and opens the device's photo gallery.
+*/
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -226,6 +258,9 @@ export default function App() {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
+/**
+Requests device camera permissions and opens the device's camera.
+*/
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -243,6 +278,10 @@ export default function App() {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
+/**
+Submits the captured image to the FastAPI backend for ML inference. 
+Displays a loading screen while waiting for the response. 
+*/
   const handleStartDetection = async () => {
     if (!image) {
       Alert.alert("No Image", "Please upload an image first.");
@@ -252,7 +291,8 @@ export default function App() {
     try {
       setIsLoading(true);
 
-      const MIN_TIME = 2500;
+      // Minimum wait time to display loading screen for smoother UX
+      const MIN_TIME = 2500; // 2.5 seconds
       const start = Date.now();
       const predictionPromise = uploadImage(image);
 
@@ -275,14 +315,19 @@ export default function App() {
     }
   };
 
+
   const handleBackToUpload = () => {
     setShowInference(false);
     setImage(null);
     setInferenceResult(null);
   };
 
+
+// --- Render Tree based on State ---
+
   if (!isAuthenticated && !isGuest) {
     return (
+      // Login Page 
       <AuthScreen
         onAuthSuccess={async (role) => {
           setIsAuthenticated(true);
@@ -290,6 +335,7 @@ export default function App() {
           setUserRole(role);
           await syncUserName();
         }}
+        // Guest Access Handler
         onGuestContinue={() => {
           setIsGuest(true);
           setIsAuthenticated(false);
@@ -300,6 +346,7 @@ export default function App() {
     );
   }
 
+  // Profile / Account Settings Page
   if (showProfile) {
     return (
       <ProfilePage
@@ -332,6 +379,7 @@ export default function App() {
     );
   }
 
+  // History Page
   if (showHistory) {
     return (
       <HistoryPage
@@ -344,6 +392,7 @@ export default function App() {
     );
   }
 
+  // Doctor Dashboard (only accessible to authenticated users with doctor role)
   if (isAuthenticated && userRole === 'doctor') {
     return (
       <DoctorDashboard
@@ -372,6 +421,7 @@ export default function App() {
     );
   }
 
+  // Dermatologists Map Page
   if (showDermatologistMap) {
     return (
       <>
@@ -393,6 +443,7 @@ export default function App() {
     );
   }
 
+  // Inference and Results Page
   if (showInference && image && inferenceResult) {
     return (
       <>
@@ -420,6 +471,7 @@ export default function App() {
     );
   }
 
+// Final Visual Layout
   return (
     <>
       <SafeAreaView
@@ -430,7 +482,7 @@ export default function App() {
           onPress={() => setShowAccount(true)}
           userName={userName}
         />
-
+        {/* Header Section with App Title and Subtitle */}
         <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
@@ -471,6 +523,8 @@ export default function App() {
           )}
         </View>
 
+        {/* Footer Section with Disclaimer */}
+
         <View style={commonStyles.footer}>
           <Text style={commonStyles.disclaimer}>
             ⚠️ Disclaimer: This demo is for educational purposes only. Not for medical use.
@@ -478,6 +532,7 @@ export default function App() {
         </View>
       </SafeAreaView>
 
+      // Account Drawer (accessible from all main screens)
       <AccountDrawer
         isVisible={showAccount}
         onClose={() => setShowAccount(false)}
@@ -491,6 +546,8 @@ export default function App() {
   );
 }
 
+// Local styles specific to this component
+// Put here to force width constraint on only upload button
 const styles = StyleSheet.create({
   uploadActionButton: {
     width: 280,
