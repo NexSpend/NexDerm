@@ -12,7 +12,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 
-# Brand colours from frontend/src/utils/commonStyles.ts
+
 PRIMARY      = colors.HexColor("#004aad")
 BG           = colors.HexColor("#f7f9fc")
 TEXT_PRIMARY = colors.HexColor("#1f2937")
@@ -39,7 +39,7 @@ COL  = R - L
 SECTION_TITLES = ["SUMMARY", "CAUSES", "SYMPTOMS", "WHAT TO OBSERVE", "WHAT TO DO", "WHEN TO SEEK CARE"]
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _text(c, x, y, txt, font="Helvetica", size=10, color=TEXT_PRIMARY, align="left"):
     c.setFont(font, size)
@@ -100,8 +100,7 @@ def _parse_sections(text: str) -> list:
     current_lines = []
 
     for line in text.splitlines():
-        stripped = line.strip()
-        # Strip markdown bold/italic markers the model sometimes adds (e.g. **SUMMARY**)
+        stripped = line.strip()  
         clean = stripped.strip("*").strip("#").strip()
         if clean.upper() in SECTION_TITLES:
             if current_title is not None:
@@ -117,7 +116,6 @@ def _parse_sections(text: str) -> list:
     return sections
 
 
-# ── Header ────────────────────────────────────────────────────────────────────
 
 def _draw_header(c, report_id_short, date_str):
     HDR_H = 72
@@ -125,9 +123,8 @@ def _draw_header(c, report_id_short, date_str):
 
     logo_drawn = False
     if os.path.exists(LOGO_PATH):
-        try:
-            # Centre the 40-pt logo vertically in the header (header centre = H - HDR_H/2)
-            logo_y = H - HDR_H / 2 - 27          # bottom of 40-pt image → centre at H-36
+        try:   
+            logo_y = H - HDR_H / 2 - 27          
             c.drawImage(LOGO_PATH, L-15, logo_y, width=70, height=70,
                         mask="auto", preserveAspectRatio=True)
             logo_drawn = True
@@ -135,7 +132,6 @@ def _draw_header(c, report_id_short, date_str):
             pass
 
     tx = L + (52 if logo_drawn else 0)
-    # Place both text baselines symmetrically around the header centre (H - 36)
     _text(c, tx, H - 28, "NexDerm", "Helvetica-Bold", 22, WHITE)
     _text(c, tx, H - 44, "AI Skin Analysis Report", "Helvetica", 11, colors.HexColor("#a8c8f0"))
     _text(c, R, H - 28, f"Report  {report_id_short}", "Helvetica", 9, WHITE, "right")
@@ -144,7 +140,6 @@ def _draw_header(c, report_id_short, date_str):
     return H - HDR_H - 18
 
 
-# ── Patient info ──────────────────────────────────────────────────────────────
 
 def _draw_info(c, y, patient_id, report_id_short, date_str):
     _text(c, L, y, "PATIENT INFORMATION", "Helvetica-Bold", 8, PRIMARY)
@@ -167,7 +162,6 @@ def _draw_info(c, y, patient_id, report_id_short, date_str):
     return y - 58
 
 
-# ── Result card ───────────────────────────────────────────────────────────────
 
 def _draw_result_card(c, y, prediction, confidence):
     pct  = round(confidence * 100, 1)
@@ -179,17 +173,12 @@ def _draw_result_card(c, y, prediction, confidence):
     y -= 12
 
     CARD_H = 76
-    _rect(c, L, y - CARD_H, COL, CARD_H, BG, stroke=BORDER)
-
-    # Condition name
+    _rect(c, L, y - CARD_H, COL, CARD_H, BG, stroke=BORDER)    
     _text(c, L + 14, y - 18, prediction, "Helvetica-Bold", 16, PRIMARY)
-
-    # Confidence bar
     _text(c, L + 14, y - 34, "CONFIDENCE SCORE", "Helvetica", 8, TEXT_TERT)
     _text(c, L + 14, y - 46, f"{pct}%", "Helvetica-Bold", 11, TEXT_PRIMARY)
     _confidence_bar(c, L + 14, y - 60, COL * 0.55, 8, pct, tier)
 
-    # Tier badge
     badge_col = SEVERITY_COLORS.get(tier, PRIMARY)
     bx = L + COL * 0.70
     _rect(c, bx, y - 62, COL * 0.26, 46, colors.HexColor("#f0f9ff"), stroke=colors.HexColor("#bae6fd"), radius=6)
@@ -199,7 +188,6 @@ def _draw_result_card(c, y, prediction, confidence):
     return y - CARD_H - 14
 
 
-# ── Section renderer ──────────────────────────────────────────────────────────
 
 def _draw_section(c, y, title, body) -> float:
     """Render one section heading + its body text. Returns new y."""
@@ -214,11 +202,9 @@ def _draw_section(c, y, title, body) -> float:
             continue
 
         if line.startswith("-"):
-            # Bullet point
             _text(c, L + 4,  y, "-", "Helvetica", 10, PRIMARY)
             y = _wrap_text(c, L + 14, y, line[1:].strip(), "Helvetica", 10, TEXT_SEC, COL - 18, line_h=13)
         else:
-            # Paragraph
             y = _wrap_text(c, L, y, line, "Helvetica", 10, TEXT_SEC, COL, line_h=14)
 
         y -= 2
@@ -226,7 +212,6 @@ def _draw_section(c, y, title, body) -> float:
     return y - 6
 
 
-# ── Disclaimer ────────────────────────────────────────────────────────────────
 
 def _draw_disclaimer(c, y):
     _divider(c, y)
@@ -239,14 +224,14 @@ def _draw_disclaimer(c, y):
     )
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
+
 
 def generate_prediction_report_pdf(
     patient_id: str,
     report_id: str,
     prediction: str,
     confidence: float,
-    report_text: str,       # plain text from ai_service / report_service
+    report_text: str,       
 ) -> bytes:
 
     rid      = report_id[-8:].upper()
@@ -261,7 +246,7 @@ def generate_prediction_report_pdf(
     y -= 6
     y = _draw_result_card(cv, y, prediction, confidence)
 
-    # Parse and render each section from the AI text
+    
     sections = _parse_sections(report_text)
     for title, body in sections:
         if body:
