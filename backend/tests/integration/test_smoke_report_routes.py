@@ -1,3 +1,7 @@
+# This module contains integration tests for the report routes of the application,
+# ensuring that the latest report and report download endpoints work correctly under various conditions,
+# including handling edge cases such as no report found, pending reports, and successful downloads. The
+
 from datetime import datetime, timezone
 
 import pytest

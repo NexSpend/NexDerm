@@ -1,10 +1,13 @@
+# This module contains unit tests for the database interactions in the doctor routes 
+# of the application, ensuring that the correct SQL queries are executed and that the 
+# application correctly handles
+
 import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 
-# ---------------------------------------------------------
-# TEST 1: Fetch Pending Cases (Success Path)
-# ---------------------------------------------------------
+
+# This test verifies that the get_pending_cases endpoint correctly retrieves pending cases for a doctor
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
 def test_get_pending_cases_success(mock_get_current_user, mock_get_connection, client):
@@ -30,9 +33,9 @@ def test_get_pending_cases_success(mock_get_current_user, mock_get_connection, c
     sql_query = mock_cursor.execute.call_args[0][0]
     assert "status = 'Pending'" in sql_query
 
-# ---------------------------------------------------------
-# TEST 2: Submit Doctor Review (Success Path)
-# ---------------------------------------------------------
+
+# This test verifies that the submit_doctor_review endpoint 
+# correctly updates the report with the doctor's review and diagnosis
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
 def test_submit_doctor_review_success(mock_get_current_user, mock_get_connection, client):
@@ -67,9 +70,8 @@ def test_submit_doctor_review_success(mock_get_current_user, mock_get_connection
     assert mock_conn.commit.called
     assert mock_conn.close.called
 
-# ---------------------------------------------------------
-# TEST 3: Edge Case - Database Connection Failure
-# ---------------------------------------------------------
+
+# This test verifies that if the database connection fails
 @patch("app.api.api_v1.endpoints.doctor_routes.get_connection")
 @patch("app.api.api_v1.endpoints.doctor_routes.get_current_user_id")
 def test_database_connection_failure(mock_get_current_user, mock_get_connection, client):

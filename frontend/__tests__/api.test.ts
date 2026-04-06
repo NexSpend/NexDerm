@@ -1,3 +1,8 @@
+// This test suite verifies the functionality of the frontend API helper 
+// functions in isolation, using Jest to mock network requests and device APIs. 
+// It ensures that the API functions correctly handle authentication, request 
+// formatting, error propagation, and integration with file system and sharing capabilities.
+
 import {
   downloadReportPdf,
   getLatestReport,

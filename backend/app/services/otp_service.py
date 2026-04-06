@@ -1,16 +1,14 @@
+# This file provides OTP-related services for FastAPI endpoints, leveraging Supabase's 
+# built-in OTP generation and verification capabilities
+
 from typing import Optional
 
 from app.core.config import settings
 from app.services.auth_service import supabase
 
-
+# The following function helps to generate and send an OTP to the user's email
 def generate_and_send_otp(user_id: str, email: str) -> None:
-    """Trigger Supabase to send an OTP email to the user.
 
-    This delegates OTP generation and delivery to Supabase Auth. It requires
-    that your Supabase project's email templates contain the `{{ .Token }}`
-    variable so an OTP is sent (not a magic link).
-    """
     if not settings.SUPABASE_URL:
         raise ValueError("Supabase not configured")
 
@@ -33,6 +31,8 @@ def generate_and_send_otp(user_id: str, email: str) -> None:
         raise ValueError(f"Failed to request Supabase OTP: {e}")
 
 
+# This function verifies the OTP code provided by the user against Supabase's 
+# verification system.
 def verify_otp(user_id: str, email: str, code: str) -> bool:
     """Verify the user-supplied OTP via Supabase.
 
@@ -47,6 +47,8 @@ def verify_otp(user_id: str, email: str, code: str) -> bool:
         return False
 
 
+# This function combines OTP verification and user retrieval, returning the user info if
+# the OTP is valid, or None if verification fails.
 def verify_otp_and_get_user(email: str, code: str) -> Optional[dict]:
     """Verify an OTP and return the Supabase response (which should include
     user/session information) or None if verification failed.
@@ -55,9 +57,7 @@ def verify_otp_and_get_user(email: str, code: str) -> Optional[dict]:
         resp = supabase.auth.verify_otp({"email": email, "token": code, "type": "email"})
         if not resp:
             return None
-        # Attempt to normalize response into a dict-like object
         try:
-            # If resp is a dict-like object, return as-is
             return resp
         except Exception:
             return None

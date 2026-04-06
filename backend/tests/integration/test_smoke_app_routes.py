@@ -1,3 +1,6 @@
+# This module contains integration tests for the application's routes, 
+# ensuring that they respond correctly to HTTP requests.
+
 import pytest
 
 

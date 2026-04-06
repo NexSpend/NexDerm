@@ -1,6 +1,11 @@
+# Tests for the /predictions endpoint, covering both guest and authenticated user 
+# scenarios, as well as various edge cases.
+
 from unittest.mock import MagicMock
 
 
+# This test verifies that the prediction endpoint correctly returns the prediction fields 
+# for a guest user
 def test_prediction_guest_success_returns_prediction_fields(
     client, monkeypatch, test_image_file
 ):
@@ -33,6 +38,9 @@ def test_prediction_guest_success_returns_prediction_fields(
     assert "report_id" not in data
 
 
+
+# This test verifies that the predictions endpoint correctly returns the report ID for 
+# an authenticated user
 def test_prediction_authenticated_success_returns_report_id(
     client, monkeypatch, test_image_file, auth_headers
 ):
@@ -89,6 +97,8 @@ def test_prediction_authenticated_success_returns_report_id(
     assert "report_id" in data
 
 
+# This test verifies that when the model returns a low confidence score, the response includes 
+# a warning message about low confidence
 def test_prediction_low_confidence_warning_present(
     client, monkeypatch, test_image_file
 ):
@@ -119,6 +129,7 @@ def test_prediction_low_confidence_warning_present(
     assert data["low_confidence_warning"] == "Confidence is low, so the result may be uncertain."
 
 
+# This test verifies that the prediction endpoint correctly handles the case where the uploaded image is not a valid image file
 def test_prediction_invalid_image_returns_400(client):
     response = client.post(
         "/api/v1/predictions/",
@@ -129,11 +140,14 @@ def test_prediction_invalid_image_returns_400(client):
     assert response.json()["detail"] == "Invalid image file."
 
 
+# This test verifies that the prediction endpoint correctly handles the case where no file is included in the request
 def test_prediction_missing_file_returns_422(client):
     response = client.post("/api/v1/predictions/")
     assert response.status_code == 422
 
 
+# This test verifies that if the submitted image is not recognized as skin by the model, 
+# the endpoint returns a 400 error with the appropriate message
 def test_prediction_non_skin_returns_400(
     client, monkeypatch, test_image_file
 ):
@@ -159,6 +173,8 @@ def test_prediction_non_skin_returns_400(
     assert response.json()["detail"] == "Please upload a skin image."
 
 
+# This test verifies that if the model raises an exception during prediction, 
+# the endpoint returns a 500 error with the exception message
 def test_prediction_model_exception_returns_500(
     client, monkeypatch, test_image_file
 ):
