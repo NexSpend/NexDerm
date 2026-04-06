@@ -1,3 +1,6 @@
+// InferencePage.tsx
+
+// Imports
 import React from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -16,8 +19,12 @@ import { getLatestReport } from '../services/api';
 import AccountButton from './AccountButton';
 import conditionData from '../data/conditionData.json';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+/**
+This screen displays the results of the AI analysis after a user uploads an image. 
+It shows the predicted skin condition, confidence score, and detailed information about the condition.
+ */
 
+// Types 
 interface BackendResult {
   prediction: string;
   confidence: number;
@@ -51,7 +58,7 @@ interface InferencePageProps {
   userName?: string;
 }
 
-// ── Severity colour map ───────────────────────────────────────────────────────
+//  Severity colour map (used for badges and confidence bar)
 
 const SEVERITY_STYLES: Record<string, { bg: string; border: string; text: string }> = {
   success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' },
@@ -74,7 +81,7 @@ const getSeverityColorFromRiskLevel = (
   }
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function SectionBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -108,7 +115,7 @@ function AlertBox({ text }: { text: string }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+//  Main component export
 
 export default function InferencePage({
   imageUri,
@@ -126,7 +133,7 @@ export default function InferencePage({
         ? result.confidence * 100
         : result.confidence;
 
-  // Look up rich condition info from JSON; fall back gracefully
+  // Look up condition info from JSON
   const info: ConditionInfo | null =
     (conditionData as Record<string, ConditionInfo>)[result.prediction] ?? null;
 
@@ -134,6 +141,7 @@ export default function InferencePage({
   const severityColor = getSeverityColorFromRiskLevel(severityLabel);
   const severityStyle = SEVERITY_STYLES[severityColor];
 
+  // Handles downloading the latest report PDF, with guest user check and error handling for report generation status
   const handleDownloadLatestReport = async () => {
     if (isGuest) {
       Alert.alert('Sign Up Required', 'Sign up or log in to download reports.');
@@ -179,19 +187,19 @@ export default function InferencePage({
       )}
 
       <ScrollView contentContainerStyle={[commonStyles.scrollContent, styles.scroll]}>
-        {/* ── Header ── */}
+        {/*  Header  */}
         <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>Detection Results</Text>
         </View>
 
         <View style={styles.body}>
-          {/* ── Image ── */}
+          {/*  Image  */}
           <View style={commonStyles.imageBox}>
             <Image source={{ uri: imageUri }} style={commonStyles.previewImage} />
           </View>
 
-          {/* ── Result card ── */}
+          {/*  Result card  */}
           <View style={commonStyles.cardWide}>
             {/* Condition name + severity badge */}
             <View style={styles.conditionRow}>
@@ -286,7 +294,7 @@ export default function InferencePage({
             )}
           </View>
 
-          {/* ── Action buttons ── */}
+          {/*  Action buttons  */}
           <TouchableOpacity
             style={[
               commonStyles.primaryButton,
@@ -315,7 +323,7 @@ export default function InferencePage({
           </TouchableOpacity>
         </View>
 
-        {/* ── Footer ── */}
+        {/*  Footer  */}
         <View style={commonStyles.footer}>
           <Text style={commonStyles.disclaimer}>
             ⚠️ Disclaimer: This is an AI prediction. Please consult a medical professional for diagnosis.
@@ -326,8 +334,8 @@ export default function InferencePage({
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 
+// Styles specific to the InferencePage
 const styles = StyleSheet.create({
   scroll: {
     paddingBottom: 12,
