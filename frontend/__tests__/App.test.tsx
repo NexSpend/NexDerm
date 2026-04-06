@@ -1,3 +1,9 @@
+// This test suite verifies the high-level navigation and upload flows of the App.tsx component,
+// with all child screens mocked out. It uses React Native Testing Library to 
+// simulate user interactions and Jest to mock API calls and device permissions, 
+// ensuring the app responds correctly to various scenarios such as successful uploads, 
+// permission denials, and error handling.
+
 import React from 'react';
 import { Alert } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -5,6 +11,9 @@ import App from '../App';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../src/services/supabase';
 import { uploadImage } from '../src/services/api';
+
+// Mocking the various screens and components used in App.tsx to isolate testing of 
+// navigation and upload flows.
 
 jest.mock('../src/services/supabase', () => ({
   supabase: {

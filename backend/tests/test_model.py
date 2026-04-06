@@ -1,3 +1,7 @@
+# This module contains unit tests for the machine learning model components of the application,
+# including the DenseNet and ResNet classifiers, the ensemble logic, the skin filter wrapper that 
+# integrates CLIP, and the ModelService singleton that provides access to the model pipeline.
+
 import sys
 import math
 from unittest.mock import MagicMock
@@ -33,7 +37,7 @@ CLASS_TO_IDX = {"acne": 0, "eczema": 1, "melanoma": 2}
 NUM_CLASSES = len(CLASSES)
 
 
-# --- Fake model that always predicts a specific class with high confidence ---
+# Fake model that always predicts a specific class with high confidence
 def make_fake_model(num_classes, predicted_class_idx, confidence_logit=100.0):
     model = MagicMock(spec=nn.Module)
     def _forward(x):
@@ -45,7 +49,7 @@ def make_fake_model(num_classes, predicted_class_idx, confidence_logit=100.0):
     return model
 
 
-# --- Fake checkpoint that mimics the structure saved during training ---
+# Fake checkpoint that mimics the structure saved during training
 def make_fake_checkpoint(class_to_idx=None, norm_mean=None, norm_std=None):
     if class_to_idx is None:
         class_to_idx = CLASS_TO_IDX
@@ -57,7 +61,7 @@ def make_fake_checkpoint(class_to_idx=None, norm_mean=None, norm_std=None):
     return ckpt
 
 
-# --- Fake CLIP outputs that produce the requested skin probability via softmax ---
+# Fake CLIP outputs that produce the requested skin probability via softmax
 def make_clip_outputs(skin_prob):
     logit = -1e6 if skin_prob <= 0.0 else (1e6 if skin_prob >= 1.0 else math.log(skin_prob / (1.0 - skin_prob)))
     outputs = MagicMock()
@@ -65,7 +69,7 @@ def make_clip_outputs(skin_prob):
     return outputs
 
 
-# --- Standard RGB and grayscale test images ---
+# Standard RGB and grayscale test images ---
 @pytest.fixture
 def rgb_image():
     return Image.new("RGB", (300, 300), color=(128, 64, 32))
@@ -76,7 +80,7 @@ def grayscale_image():
     return Image.new("L", (300, 300), color=100)
 
 
-# --- Pre-loaded DenseNet with a controlled fake model swapped in ---
+# Pre-loaded DenseNet with a controlled fake model swapped in 
 @pytest.fixture
 def loaded_densenet(mocker):
     mocker.patch("pathlib.Path.exists", return_value=True)
@@ -90,7 +94,7 @@ def loaded_densenet(mocker):
     return clf
 
 
-# --- Pre-loaded ResNet with a controlled fake model swapped in ---
+# Pre-loaded ResNet with a controlled fake model swapped in
 @pytest.fixture
 def loaded_resnet(mocker):
     mocker.patch("pathlib.Path.exists", return_value=True)
@@ -104,7 +108,7 @@ def loaded_resnet(mocker):
     return clf
 
 
-# --- Ensemble with both sub-classifiers pre-wired, skipping real checkpoint loading ---
+# Ensemble with both sub-classifiers pre-wired, skipping real checkpoint loading
 @pytest.fixture
 def loaded_ensemble(loaded_densenet, loaded_resnet):
     ens = EnsembleDiseaseClassifier(config={"device": "cpu"})
@@ -114,7 +118,7 @@ def loaded_ensemble(loaded_densenet, loaded_resnet):
     return ens
 
 
-# --- SkinFilterWrapper with CLIP model and processor fully mocked ---
+# SkinFilterWrapper with CLIP model and processor fully mocked
 @pytest.fixture
 def skin_filter(mocker, loaded_ensemble):
     proc = MagicMock()
@@ -124,17 +128,13 @@ def skin_filter(mocker, loaded_ensemble):
     return SkinFilterWrapper(disease_ensemble=loaded_ensemble, threshold=0.7)
 
 
-# --- Clears the ModelService singleton before and after each test that needs it ---
+# Clears the ModelService singleton before and after each test that needs it
 @pytest.fixture
 def reset_singleton():
     ModelService._instance = None
     yield
     ModelService._instance = None
 
-
-# =============================================================================
-# Helper functions: load_checkpoint, get_state_dict, build_idx_to_class
-# =============================================================================
 
 # load_checkpoint raises when the file does not exist on disk
 def test_load_checkpoint_file_not_found(mocker):
@@ -172,9 +172,7 @@ def test_build_idx_to_class_sorted():
     assert build_idx_to_class({"b": 1, "a": 0, "c": 2}) == ["a", "b", "c"]
 
 
-# =============================================================================
 # DenseNet classifier
-# =============================================================================
 
 # Starts clean with no models, no transform, and no class mapping
 def test_densenet_initial_state_empty():
@@ -234,9 +232,7 @@ def test_densenet_predict_logits_no_models_raises():
         clf.predict_logits(torch.zeros(1, 3, 224, 224))
 
 
-# =============================================================================
 # ResNet classifier
-# =============================================================================
 
 # A valid checkpoint loads one model and derives the class list from class_to_idx
 def test_resnet_load_happy_path(mocker):
@@ -274,9 +270,7 @@ def test_resnet_predict_logits_shape(loaded_resnet):
     assert loaded_resnet.predict_logits(torch.zeros(1, 3, 224, 224)).shape == (1, 1, NUM_CLASSES)
 
 
-# =============================================================================
 # Ensemble classifier
-# =============================================================================
 
 # When all models agree, the ensemble returns that unanimous prediction
 def test_ensemble_unanimous_vote(loaded_ensemble, rgb_image):
@@ -318,9 +312,7 @@ def test_ensemble_predict_before_load_raises(rgb_image):
         ens.predict(rgb_image)
 
 
-# =============================================================================
 # SkinFilterWrapper
-# =============================================================================
 
 # Default threshold is 0.7 when none is explicitly provided
 def test_skin_filter_default_threshold(mocker, loaded_ensemble):
@@ -359,9 +351,7 @@ def test_skin_filter_grayscale_converted(skin_filter, grayscale_image, mocker):
     assert skin_filter.smart_predict(grayscale_image)["is_skin"] is True
 
 
-# =============================================================================
 # ModelService
-# =============================================================================
 
 FAKE_RESULT = {"is_skin": True, "prediction": "acne", "confidence": 0.91, "votes": {}, "model_outputs": {}}
 

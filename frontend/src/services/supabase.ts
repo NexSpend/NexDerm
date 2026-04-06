@@ -1,3 +1,7 @@
+// This file initializes the Supabase client for the React Native application, 
+// allowing us to interact with our Supabase backend services such as authentication
+//  and database operations.
+
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';

@@ -1,3 +1,9 @@
+# This module defines pytest fixtures and configuration for the test suite, 
+# including environment setup, external service stubs, and common test utilities. 
+# The fixtures provide a TestClient instance for making HTTP requests to the app, 
+# as well as helper functions for generating authentication headers and test image data. 
+# The configuration also includes a custom marker for integration tests.
+
 import io
 import importlib
 import os

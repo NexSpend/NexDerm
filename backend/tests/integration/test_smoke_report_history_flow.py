@@ -1,3 +1,8 @@
+# This module contains integration tests for the report history flow of the application,
+# ensuring that the report history endpoint correctly retrieves and formats the user's report history,
+# including handling edge cases such as an empty history. The tests use monkeypatching to simulate
+# database interactions and S3 URL generation, allowing us to verify the endpoint's behavior in isolation
+
 import pytest
 
 from tests.factories import build_history_row

@@ -1,3 +1,6 @@
+# This module contains integration tests for the authentication flow of the application,
+# ensuring that the send OTP and verify OTP endpoints work correctly under various conditions.
+
 import pytest
 
 from tests.factories import build_send_otp_payload, build_verify_otp_payload

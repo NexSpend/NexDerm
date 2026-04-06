@@ -1,3 +1,7 @@
+# This module contains integration tests for the smoke prediction flow of the application,
+# ensuring that the prediction endpoint works correctly for both authenticated and guest users,
+# and that it handles various edge cases such as invalid images and database failures.
+
 import io
 
 import pytest

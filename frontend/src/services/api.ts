@@ -1,3 +1,6 @@
+// This file defines the API helper functions for the frontend, 
+// which interact with the backend API endpoints.
+
 // export const API_URL = "http://127.0.0.1:8000/api/v1";
 // http://127.0.0.1:8000/docs : Use this to check the backend API documentation
 
@@ -15,6 +18,9 @@ export interface VerifyOtpResponse {
   expires_at?: string; // ISO timestamp when the token expires
 }
 
+
+// This method sends a request to the backend to send an OTP code to the specified email address,
+// requiring authentication by passing the Supabase token, and calling the appropriate API endpoint.
 export const sendOtpCode = async (email: string, supabaseToken: string): Promise<void> => {
   const response = await fetch(`${API_URL}/auth/send-otp`, {
     method: 'POST',
@@ -32,6 +38,9 @@ export const sendOtpCode = async (email: string, supabaseToken: string): Promise
   }
 };
 
+
+// This method sends a request to the backend to send an OTP code to the specified email address, 
+// without requiring authentication, by calling the appropriate public API endpoint.
 export const sendOtpCodePublic = async (email: string): Promise<void> => {
   const response = await fetch(`${API_URL}/auth/send-otp-public`, {
     method: 'POST',
@@ -48,6 +57,9 @@ export const sendOtpCodePublic = async (email: string): Promise<void> => {
   }
 };
 
+
+// This method verifies the OTP code for logged-in users by calling the appropriate backend API endpoint,
+// passing the email, code, and Supabase token for authentication
 export const verifyOtpCode = async (
   email: string,
   code: string,
@@ -71,6 +83,9 @@ export const verifyOtpCode = async (
   return (await response.json()) as VerifyOtpResponse;
 };
 
+
+// This method verifies the OTP code for public users (without requiring a Supabase token),
+// by calling the appropriate backend API endpoint 
 export const verifyOtpCodePublic = async (
   email: string,
   code: string
@@ -92,6 +107,8 @@ export const verifyOtpCodePublic = async (
   return (await response.json()) as VerifyOtpResponse;
 };
 
+
+// Interface for Prediction response information returned by the backend API
 export interface PredictionResponse {
   prediction: string;
   confidence: number;
@@ -101,6 +118,8 @@ export interface PredictionResponse {
   report_id?: string;
 }
 
+
+// Interface for dermatologist information returned by the backend API
 export interface Dermatologist {
   id: number;
   name: string;
@@ -116,6 +135,8 @@ export interface Dermatologist {
   distance?: number;
 }
 
+
+// This method uploads an image to the backend for prediction
 export const uploadImage = async (
   imageUri: string
 ): Promise<PredictionResponse> => {
@@ -156,6 +177,10 @@ export const uploadImage = async (
   }
 };
 
+
+// This method retrieves the list of nearby dermatologists based on the user's current location,
+// by calling the appropriate backend API endpoint and passing the latitude, longitude, and optional 
+// radius and limit parameters.
 export const getNearbyDermatologists = async (
   latitude: number,
   longitude: number,
@@ -197,6 +222,8 @@ export const getNearbyDermatologists = async (
   }
 };
 
+
+// Interface for the latest report response from the backend API
 export interface LatestReportResponse {
   report_id: string;
   prediction: string;
@@ -206,6 +233,10 @@ export interface LatestReportResponse {
   created_at: string;
 }
 
+
+// This method retrieves the latest report for the logged-in user by calling the appropriate 
+// backend API endpoint, ensuring the user is authenticated and properly handling any errors 
+// that may occur during the request.
 export const getLatestReport = async (): Promise<LatestReportResponse> => {
   try {
     const {
@@ -238,6 +269,9 @@ export const getLatestReport = async (): Promise<LatestReportResponse> => {
   }
 };
 
+
+// This method retrieves the user's profile information by calling the appropriate 
+// backend API endpoint
 export const getUserInfo = async () => {
   const {
     data: { session },
@@ -265,6 +299,8 @@ export const getUserInfo = async () => {
   return response.json();
 };
 
+
+// Interface for medical history items returned by the backend API
 export interface MedicalHistoryItem {
   id: string;
   prediction: string | null;
@@ -279,6 +315,10 @@ export interface MedicalHistoryItem {
   reviewed_at?: string | null;
 }
 
+
+// This method retrieves the user's medical history by calling the appropriate backend 
+// API endpoint, ensuring the user is authenticated and properly handling any errors 
+// that may occur during the request.
 export const getMedicalHistory = async (): Promise<MedicalHistoryItem[]> => {
   try {
     const {
@@ -312,14 +352,13 @@ export const getMedicalHistory = async (): Promise<MedicalHistoryItem[]> => {
   }
 };
 
+// Interface for the user profile response from the backend
 export interface ProfileResponse {
   full_name: string;
   email: string;
 }
 
-/**
- * Interface for a pending case report.
- */
+// Interface for pending cases that doctors can review
 export interface PendingCase {
   id: string;
   prediction: string;
@@ -330,12 +369,8 @@ export interface PendingCase {
   user_email?: string;
 }
 
-/**
- * Fetches a list of pending cases that require a doctor's review.
- * Uses the current Supabase session access token for authentication.
- * @returns A promise that resolves to an array of PendingCase objects.
- * @throws Error if the user is not authenticated or the API call fails.
- */
+// This method retrieves the list of pending cases for doctors to review, 
+// ensuring the user is authenticated and properly handling API errors.
 export const getPendingCases = async (): Promise<PendingCase[]> => {
   try {
     const {
@@ -371,15 +406,8 @@ export const getPendingCases = async (): Promise<PendingCase[]> => {
   }
 };
 
-/**
- * Submits a doctor's review for a specific case.
- * Uses the current Supabase session access token for authentication.
- * @param caseId The ID of the case being reviewed.
- * @param notes The doctor's review notes.
- * @param diagnosis The doctor's final diagnosis.
- * @returns A promise that resolves to the API response.
- * @throws Error if the user is not authenticated or the API call fails.
- */
+// This method allows a doctor to submit their review for a specific case, 
+// including their notes and final diagnosis.
 export const submitDoctorReview = async (
   caseId: string,
   notes: string,
@@ -425,6 +453,10 @@ export const submitDoctorReview = async (
   }
 };
 
+
+// This method handles downloading a report PDF by first fetching a presigned URL from the backend,
+// then downloading the file to the device's local storage, and finally invoking the sharing 
+// flow to allow the user to save or share the PDF.
 export const downloadReportPdf = async (reportId: string): Promise<void> => {
   const {
     data: { session },

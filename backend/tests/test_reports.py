@@ -1,11 +1,15 @@
+# Tests for the /reports endpoints, covering both guest and authenticated user scenarios, 
+# as well as various edge cases.
+
+from datetime import datetime
+
+# This test verifies that to use the /reports/latest endpoint, the user must be authenticated
 def test_get_latest_report_requires_auth(client):
     response = client.get("/api/v1/reports/latest")
     assert response.status_code in (401, 403)
 
 
-from datetime import datetime
-
-
+# This test verifies the success case for the /reports/latest endpoint
 def test_get_latest_report_success(client, monkeypatch, auth_headers):
     from app.api.api_v1.endpoints.general_routes import report_route
 
@@ -57,7 +61,8 @@ def test_get_latest_report_success(client, monkeypatch, auth_headers):
     assert data["file_name"] == "report.pdf"
     assert data["download_url"] == "https://example.com/report.pdf"
 
-
+# This test verifies that to download a report using the /reports/{report_id}/download endpoint, 
+# the user must be authenticated
 def test_download_report_requires_auth(client):
     response = client.get("/api/v1/reports/some-id/download")
     assert response.status_code in (401, 403)

@@ -1,5 +1,7 @@
-import pytest
+# This module contains tests to verify that protected endpoints of the application correctly 
+# reject requests that are missing authentication credentials.
 
+import pytest
 
 @pytest.mark.parametrize(
     "method,path,kwargs",
