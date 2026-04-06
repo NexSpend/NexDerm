@@ -1,72 +1,251 @@
-# NexDerm – AI‑Powered Skin Disease Classification & Dermatology Support
+# NexDerm
 
-## 📌 Overview  
-**NexDerm** is a machine learning–driven application designed to help in the early detection of dermatological conditions.  
-Users can upload or capture images of skin lesions, which are then processed by a deep learning classifier. The system provides a classification (e.g. healthy vs. possible skin condition) and, when a condition is suspected, suggests nearby dermatologists based on the user’s location.
+NexDerm is a skin-condition screening app with:
 
-This project demonstrates the practical fusion of **AI diagnostics** with **real-world utility** in dermatology support.
+- A `FastAPI` backend for auth, prediction, reports, and doctor review flows
+- An `Expo` / React Native frontend
+- PyTorch-based model artifacts stored in the backend repository
 
----
+This repository is for development and coursework use. It is not a medical device and must not be treated as diagnostic software.
 
-## 🚀 Features
-- 📸 **Image Input** — Upload from gallery or capture using device camera  
-- 🧠 **Deep Learning Model** — Classifies skin lesions into healthy or disease categories  
-- 🩺 **Insights & Suggestions** — Offers possible condition indications  
-- 📍 **Dermatologist Locator** — Recommends specialties near user’s geolocation  
-- 🎨 **Clean, Intuitive UI** — Designed for ease of use and clarity  
+## Stack
 
----
+- Backend: Python, FastAPI, SQLAlchemy, pytest
+- Frontend: Expo, React Native, TypeScript, Jest
+- External services used by the app: Supabase, PostgreSQL, AWS S3, Resend, Google Maps
+- ML libraries: PyTorch, torchvision, scikit-learn
 
-## 🧑‍💻 Tech Stack
-- **Frontend:** React Native or React  
-- **Backend:** Node.js + Express  
-- **Machine Learning / Data Science:** Python (TensorFlow, PyTorch, scikit-learn)  
-- **Database / Storage:** PostgreSQL, Firebase, or equivalent  
-- **APIs / Services:**
-  - Geolocation / Maps API (e.g. Google Maps, OpenStreetMap)  
-  - Possibly a dermatologist directory API (if available)  
+## Repository Layout
 
----
-
-## 📊 Dataset  
-This project uses the **Skin Lesions Classification Dataset** hosted on Kaggle.  
-- **Dataset URL:** [Kaggle – Skin DS](https://www.kaggle.com/datasets/ahmedxc4/skin-ds/data)  
-- Contains thousands of labeled images of skin lesions (including healthy and multiple disease classes)  
-- Rich variety of lesion types, helpful for building a robust classifier  
-- You’ll likely need preprocessing (resizing, augmentation, normalization) to get best performance  
-
-
-## 🏃 Usage
-1. Launch NexDerm on your device (web or mobile).  
-2. Upload or take a photo of your skin lesion.  
-3. The model classifies the image.  
-4. If a potential condition is predicted, view a ranked list of nearby dermatologists.
-
----
-
-## 📌 Project Structure
-```
-├── backend/         # Node.js server & API endpoints
-├── frontend/        # React / React Native application
-├── model/           # Training, evaluation, inference scripts & models
-├── data/            # Dataset download, preprocessing, augmentation
-├── docs/            # Reports, diagrams, documentation
-└── README.md
+```text
+NexDerm/
+|-- backend/
+|   |-- app/
+|   |-- tests/
+|   |-- requirements.txt
+|   |-- requirements-test.txt
+|   `-- pytest.ini
+|-- frontend/
+|   |-- src/
+|   |-- __tests__/
+|   `-- package.json
+`-- README.md
 ```
 
----
+## Prerequisites
 
-## 🧪 Experimental & Future Enhancements
-- Use transfer learning (e.g. EfficientNet, ResNet, DenseNet) to boost performance  
-- Hyperparameter tuning, cross-validation, and ensembling  
-- Optimize inference speed (model pruning, quantization)  
-- Add support for multiple languages and better UX  
-- Integrate with dermatologist databases or EHR systems  
-- Add a “history” or “case log” feature for users to track past scans  
+Install these before working on the project:
 
----
+- Python 3.11 or newer
+- Node.js 18 or newer
+- npm
+- Git
 
-## ⚠️ Disclaimer
-**NexDerm is an educational / research project.**  
-It is **not a substitute for professional medical advice or diagnosis.**  
-Always consult a licensed dermatologist for medical decisions and treatment.
+Recommended on Windows:
+
+- Use the repo virtual environment at `.venv`, or create one with `python -m venv .venv`
+- Use PowerShell
+
+## Backend Setup
+
+From the repo root:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+pip install -r backend\requirements-test.txt
+```
+
+Create `backend/.env` with the variables the backend expects:
+
+```env
+DB_HOST=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_PORT=
+
+SUPABASE_URL=
+SUPABASE_ANON_PUBLIC_KEY=
+SUPABASE_JWT_SECRET=
+SUPABASE_SERVICE_ROLE_KEY=
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+AWS_S3_BUCKET_NAME=
+
+RESEND_API_KEY=
+OPENROUTER_API_KEY=
+OTP_HASH_SECRET=
+MFA_JWT_SECRET=
+SECRET_KEY=
+API_V1_STR=/api/v1
+```
+
+Notes:
+
+- `backend/app/core/config.py` loads `.env` from the backend directory.
+- `SUPABASE_SERVICE_ROLE_KEY` is required by `backend/app/services/auth_service.py`.
+- `OPENROUTER_API_KEY` and `RESEND_API_KEY` appear to be optional depending on which features you exercise.
+
+## Run the Backend
+
+Run the backend from inside `backend` so the app imports and `.env` file resolve correctly:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+Backend URLs:
+
+- App root: `http://127.0.0.1:8000/`
+- Swagger docs: `http://127.0.0.1:8000/docs`
+- OpenAPI JSON: `http://127.0.0.1:8000/api/v1/openapi.json`
+
+## Frontend Setup
+
+From the `frontend` directory:
+
+```powershell
+cd frontend
+npm install
+```
+
+Optional frontend env file:
+
+```env
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=
+```
+
+Current frontend configuration notes:
+
+- `frontend/src/services/api.ts` currently hard-codes `API_URL` to a local LAN IP.
+- If you run the backend on your own machine, update that value before testing the app.
+- For Expo Go on a physical device, use your machine's local network IP.
+- For web or emulator-only testing, `http://127.0.0.1:8000/api/v1` may be enough.
+
+## Run the Frontend
+
+From `frontend`:
+
+```powershell
+npm start
+```
+
+Other available scripts:
+
+```powershell
+npm run android
+npm run ios
+npm run web
+```
+
+## Running Tests
+
+### Backend unit tests with pytest
+
+From the repo root:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pytest backend
+```
+
+Or from inside `backend`:
+
+```powershell
+cd backend
+pytest
+```
+
+Useful pytest commands:
+
+```powershell
+pytest backend -q
+pytest backend\tests\test_model.py
+pytest backend -m integration
+pytest backend --cov=app --cov-report=term-missing
+```
+
+Current pytest config in [`backend/pytest.ini`](backend/pytest.ini):
+
+- Test path: `tests`
+- File pattern: `test_*.py`
+- Coverage target: `app`
+- Coverage XML output: `backend/coverage.xml`
+- Minimum coverage threshold: `10`
+
+Important test behavior:
+
+- `backend/tests/conftest.py` injects safe default env vars for tests.
+- External services such as auth, S3, PDF generation, and model loading are stubbed for deterministic tests.
+- That means most backend tests can run without live Supabase or AWS credentials.
+
+### Frontend tests
+
+From `frontend`:
+
+```powershell
+npm test
+```
+
+This runs the Jest suite defined in [`frontend/package.json`](frontend/package.json).
+
+Frontend test files currently include:
+
+- `frontend/__tests__/App.test.tsx`
+- `frontend/__tests__/api.test.ts`
+
+## Installing Everything From Scratch
+
+If you want a minimal first-time setup:
+
+1. Clone the repo.
+2. Create and activate the virtual environment.
+3. Install backend dependencies.
+4. Install frontend dependencies.
+5. Create `backend/.env`.
+6. Set the frontend API base URL in `frontend/src/services/api.ts`.
+7. Start the backend with `uvicorn`.
+8. Start the frontend with `npm start`.
+9. Run backend tests with `pytest backend`.
+10. Run frontend tests with `npm test`.
+
+## Common Commands
+
+From the repo root:
+
+```powershell
+# activate venv
+.\.venv\Scripts\Activate.ps1
+
+# backend tests
+pytest backend
+
+# backend server
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+# frontend install
+cd frontend
+npm install
+
+# frontend dev server
+npm start
+
+# frontend tests
+npm test
+```
+
+## Known Gaps
+
+- The frontend currently hard-codes the backend API base URL in `frontend/src/services/api.ts`.
+- The frontend Supabase client is configured with constants in `frontend/src/services/supabase.ts`, not environment variables.
+- The backend depends on several third-party services, so a fully working local runtime needs valid credentials even though the pytest suite does not.
+
+## Disclaimer
+
+NexDerm is an educational project. It is not a substitute for professional medical advice, diagnosis, or treatment.
