@@ -1,3 +1,6 @@
+// CaseReviewScreen.tsx
+
+// Imports
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -16,16 +19,25 @@ import {
 import { colors } from '../utils/commonStyles';
 import { PendingCase, submitDoctorReview } from '../services/api';
 
+/**
+This screen allows doctors to review a pending case in detail. 
+It displays the AI's prediction, confidence level, and the uploaded image.
+ * @property {PendingCase} selectedCase - The full data object of the case the doctor is currently reviewing.
+ * @property {function} onBack - Callback to return the doctor to the main dashboard.
+ */
 interface CaseReviewScreenProps {
   selectedCase: PendingCase;
   onBack: () => void;
 }
-
+/**
+ * Main Component Export
+ */
 export default function CaseReviewScreen({ selectedCase, onBack }: CaseReviewScreenProps) {
   const [doctorNotes, setDoctorNotes] = useState('');
   const [finalDiagnosis, setFinalDiagnosis] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Formatting data for display
   const confidencePercent = `${(selectedCase.confidence * 100).toFixed(1)}%`;
   const caseIdShort = `${selectedCase.id.substring(0, 8)}...`;
   const submittedOn = new Date(selectedCase.created_at).toLocaleString([], {
@@ -36,6 +48,7 @@ export default function CaseReviewScreen({ selectedCase, onBack }: CaseReviewScr
     minute: '2-digit',
   });
 
+  // Handles the submission of the doctor's review, including validation and API call
   const handleSubmitReview = async () => {
     if (!doctorNotes.trim() || !finalDiagnosis.trim()) {
       Alert.alert('Missing Information', 'Please provide both doctor notes and a final diagnosis.');
@@ -61,6 +74,7 @@ export default function CaseReviewScreen({ selectedCase, onBack }: CaseReviewScr
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        {/* Case Review Card */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Review Case</Text>
@@ -150,6 +164,7 @@ export default function CaseReviewScreen({ selectedCase, onBack }: CaseReviewScr
   );
 }
 
+// Styles specific to the CaseReviewScreen Page
 const styles = StyleSheet.create({
   container: {
     flex: 1,

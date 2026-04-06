@@ -1,12 +1,26 @@
+// AccountButton.tsx
+
+// Imports
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { colors } from '../utils/commonStyles';
+import { colors} from '../utils/commonStyles';
 
+/**
+This component renders a circular account button that displays the user's initials. 
+It is placed in the top-left corner of the app and is the entry point to the user's account or profile page.
+@property {function} onPress - Callback to navigate to Account Drawer when the button is pressed.
+@property {string} [userName] - The full name of the user to extract initials from.
+ */
 interface AccountButtonProps {
   onPress: () => void;
   userName?: string;
 }
 
+/**
+Parses a display name to extract up to two uppercase initials.
+@param {string} name - The raw name string to parse.
+@returns {string} The extracted initials, or "U" as a fallback.
+ */
 const getInitials = (name: string): string => {
   const trimmed = (name || '').trim();
 
@@ -14,6 +28,7 @@ const getInitials = (name: string): string => {
     return 'U';
   }
 
+  // Extracting initials
   const initials = trimmed
     .split(' ')
     .filter(Boolean)
@@ -25,6 +40,9 @@ const getInitials = (name: string): string => {
   return initials || 'U';
 };
 
+/**
+Exporting the final component
+ */
 export default function AccountButton({ onPress, userName = 'User' }: AccountButtonProps) {
   const initials = getInitials(userName);
 

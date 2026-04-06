@@ -1,3 +1,6 @@
+// DoctorDashboard.tsx
+
+// Imports
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   SafeAreaView,
@@ -14,13 +17,20 @@ import {
 import { colors } from '../utils/commonStyles';
 import { getPendingCases, PendingCase } from '../services/api';
 import CaseReviewScreen from './CaseReviewScreen';
-
+/**
+This is the main dashboard screen for doctors. 
+It displays a list of pending cases that have been submitted by users and reviewed by the AI model. 
+Doctors can filter cases based on confidence levels, search for specific cases, and click into each 
+case to review details and provide their expert diagnosis.
+@property {function} onLogout - Callback triggered when the doctor clicks the log out button.
+ */
 interface DoctorDashboardProps {
   onLogout: () => void;
 }
 
 type DashboardFilter = 'all' | 'needs-attention' | 'high-confidence' | 'today';
 
+// Main Component Export
 export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
   const [pendingCases, setPendingCases] = useState<PendingCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<PendingCase | null>(null);
@@ -29,6 +39,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<DashboardFilter>('all');
 
+  // Fetches pending cases from the API and updates state. Handles loading and error states.
   const fetchPendingCases = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -57,6 +68,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
     fetchPendingCases();
   };
 
+  // Filters pending cases based on search query matching ID, prediction, user name, or email
   const searchFilteredCases = pendingCases.filter(
     (item) =>
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,6 +106,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
     return true;
   });
 
+  // Metrics calculations for dashboard cards
   const needsAttentionCount = pendingCases.filter((item) => item.confidence < 0.6).length;
   const highConfidenceCount = pendingCases.filter((item) => item.confidence >= 0.8).length;
   const todayCasesCount = pendingCases.filter((item) => isToday(item.created_at)).length;
@@ -109,6 +122,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
     });
   };
 
+  // If a case is selected, show the CaseReviewScreen. Otherwise, show the main dashboard.
   if (selectedCase) {
     return (
       <CaseReviewScreen
@@ -129,7 +143,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
           <Text style={styles.logoutButtonText}>Log out</Text>
         </TouchableOpacity>
       </View>
-
+      {/* Metrics Row with filterable cards */}
       <View style={styles.metricsRow}>
         <TouchableOpacity
           activeOpacity={0.9}
@@ -269,6 +283,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
   );
 }
 
+// Styles specific to the DoctorDashboard Page
 const styles = StyleSheet.create({
   container: {
     flex: 1,

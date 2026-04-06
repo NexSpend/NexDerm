@@ -1,3 +1,6 @@
+// ChangePasswordPage.tsx
+
+// Imports
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -11,10 +14,15 @@ import {
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
 
+/**
+This page allows users to change their password. 
+ * @property {function} onBackToProfile - Callback to navigate the user back to their profile view.
+ */
 interface ChangePasswordPageProps {
   onBackToProfile: () => void;
 }
 
+// Main Component Export
 export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPageProps) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -24,7 +32,9 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Handles the password change process, including validation and API calls to Supabase
   const handleChangePassword = async () => {
+    // Password validation checks
     if (!currentPassword.trim()) {
       Alert.alert('Error', 'Please enter your current password');
       return;
@@ -97,6 +107,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
     }
   };
 
+  // Password toggle button component (show/hide password functionality)
   const PasswordToggleButton = ({ show, onPress }: { show: boolean; onPress: () => void }) => (
     <TouchableOpacity style={styles.toggleButton} onPress={onPress}>
       <Text style={styles.toggleButtonText}>{show ? 'Hide' : 'Show'}</Text>
@@ -112,7 +123,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
         <Text style={styles.headerTitle}>Change Password</Text>
         <View style={styles.placeholder} />
       </View>
-
+      {/* Main Form */}
       <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.pageTitle}>Update your password</Text>
@@ -207,6 +218,7 @@ export default function ChangePasswordPage({ onBackToProfile }: ChangePasswordPa
   );
 }
 
+// Styles specific to the ChangePasswordPage Page
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',

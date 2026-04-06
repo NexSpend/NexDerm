@@ -1,3 +1,6 @@
+// AccountDrawer.tsx
+
+// Imports
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -12,10 +15,21 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
-import { colors } from '../utils/commonStyles';
+import { colors, commonStyles } from '../utils/commonStyles';
 import { getMedicalHistory } from '../services/api';
 import { supabase } from '../services/supabase';
 
+/**
+This component renders a sliding side-drawer that displays navigation
+buttons to user profile information (account settings) page and scan history page.
+ * @property {boolean} isVisible - If drawer is currently visible.
+ * @property {function} onClose - Callback to close the drawer.
+ * @property {function} onSignOut - Callback for sign out.
+ * @property {function} [onShowProfile] - Callback to navigate to Profile Page.
+ * @property {function} [onShowHistory] - Callback to navigate to the History Page.
+ * @property {boolean} isGuest - Guest or Authenticated.
+ * @property {function} onGoToAuthPage - Callback to redirect guest to Auth Screen.
+ */
 interface AccountDrawerProps {
   isVisible: boolean;
   onClose: () => void;
@@ -26,6 +40,7 @@ interface AccountDrawerProps {
   onGoToAuthPage: () => void;
 }
 
+// User Information
 interface UserInfo {
   email: string;
   firstName?: string;
@@ -35,6 +50,7 @@ interface UserInfo {
   phone?: string;
 }
 
+// Each medical history item represents a past diagnosis with associated details.
 interface MedicalHistoryItem {
   id: string;
   diagnosis: string;
@@ -43,8 +59,11 @@ interface MedicalHistoryItem {
   notes?: string;
 }
 
-const DRAWER_WIDTH = Dimensions.get('window').width * 0.75;
+const DRAWER_WIDTH = Dimensions.get('window').width * 0.75; //75% of screen width
 
+/**
+Final component export
+ */
 export default function AccountDrawer({
   isVisible,
   onClose,
@@ -58,9 +77,10 @@ export default function AccountDrawer({
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
-  const slideAnim = React.useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const slideAnim = React.useRef(new Animated.Value(-DRAWER_WIDTH)).current; // Initial position off-screen to the left
 
   useEffect(() => {
+    // Slide in/out animation
     if (isVisible) {
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -77,6 +97,10 @@ export default function AccountDrawer({
     }
   }, [isVisible]);
 
+/**
+Fetches user data from Supabase and scan history from the backend.
+Skips fetching entirely if the user is a guest.
+*/
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
@@ -88,6 +112,7 @@ export default function AccountDrawer({
         return;
       }
 
+      // Fetch user info from Supabase
       const {
         data: { user },
         error: userError,
@@ -110,6 +135,7 @@ export default function AccountDrawer({
         setUserInfo(null);
       }
 
+      // Fetch medical history from the backend
       try {
         const historyData = await getMedicalHistory();
         setMedicalHistory(Array.isArray(historyData) ? historyData : []);
@@ -126,8 +152,9 @@ export default function AccountDrawer({
     }
   };
 
+  // Sign Out
   const handleSignOut = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [ // Confirming sign out with user
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

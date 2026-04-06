@@ -1,8 +1,16 @@
+// LoadingScreen.tsx
+
+// Imports
 import React from "react";
 import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView } from "react-native";
 import { colors } from "../utils/commonStyles";
 import AccountButton from "./AccountButton";
 
+/**
+This screen is displayed while the AI is analyzing the uploaded image. 
+ * @property {function} onAccountPress - Optional callback to navigate to the Account Drawer when the account button is pressed.
+ * @property {string} userName - Name of user
+ */
 interface LoadingScreenProps {
   onAccountPress?: () => void;
   userName?: string;

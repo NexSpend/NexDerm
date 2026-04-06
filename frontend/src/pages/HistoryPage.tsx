@@ -1,3 +1,6 @@
+// HistoryPage.tsx
+
+// Imports
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -13,11 +16,18 @@ import {
 import { commonStyles, colors } from '../utils/commonStyles';
 import { downloadReportPdf, getMedicalHistory, MedicalHistoryItem } from '../services/api';
 
+/**
+This file creates the History Page component where users can view their past medical history of diagnoses.
+Users can click into each history item to see more details, including the uploaded image, AI prediction, confidence level, and doctor's review if available.
+@props {boolean} isGuest - No history data for guest users
+@props {function} onBackToAccount - Callback to navigate back to the Account screen
+ */
 interface HistoryPageProps {
   isGuest: boolean;
   onBackToAccount: () => void;
 }
 
+// Main Component Export
 export default function HistoryPage({
   isGuest,
   onBackToAccount,
@@ -101,7 +111,7 @@ export default function HistoryPage({
       </TouchableOpacity>
     );
   };
-
+ // If a history item is selected, show the detail view. 
   if (selectedHistoryItem) {
     const item = selectedHistoryItem;
     const status = (item.status || 'Pending').toLowerCase();
@@ -116,7 +126,7 @@ export default function HistoryPage({
           <Text style={styles.headerTitle}>History Details</Text>
           <View style={styles.placeholder} />
         </View>
-
+ 
         <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
           <View style={styles.row}>
             <View style={styles.rowHeader}>
@@ -184,7 +194,7 @@ export default function HistoryPage({
       </SafeAreaView>
     );
   }
-
+ // Main history list view 
   return (
     <SafeAreaView style={commonStyles.container}>
       <View style={styles.header}>
@@ -243,6 +253,7 @@ export default function HistoryPage({
   );
 }
 
+// Styles specific to the History Page
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',

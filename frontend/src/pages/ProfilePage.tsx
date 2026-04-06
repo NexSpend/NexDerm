@@ -1,3 +1,6 @@
+// ProfilePage.tsx
+
+// Imports
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -11,6 +14,14 @@ import {
 import { commonStyles, colors } from '../utils/commonStyles';
 import { supabase } from '../services/supabase';
 
+/**
+This screen displays the user's profile information, including their name and email.
+User can navigate to this page from the Account Drawer. 
+If the user is a guest, they will be prompted to sign up or log in to access their profile.
+@property {boolean} isGuest - Indicates if the user is a guest.
+@property {() => void} onBackToAccount - Callback for navigating back to the account screen.
+@property {() => void} onShowChangePassword - Callback for showing the change password screen.
+ */
 interface ProfilePageProps {
   isGuest: boolean;
   onBackToAccount: () => void;
@@ -22,6 +33,7 @@ interface UserInfo {
   email: string;
 }
 
+// Main Component Export
 export default function ProfilePage({
   isGuest,
   onBackToAccount,
@@ -96,6 +108,7 @@ export default function ProfilePage({
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      {/*  Header  */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBackToAccount}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -106,6 +119,7 @@ export default function ProfilePage({
         <View style={styles.headerRightPlaceholder} />
       </View>
 
+      {/*  Content  */}
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileContainer}>
           <View style={styles.avatarSection}>
@@ -139,7 +153,7 @@ export default function ProfilePage({
               </View>
             </View>
           </View>
-
+        {/*  Change Password Button  */}
           <TouchableOpacity
             style={styles.changePasswordButton}
             onPress={onShowChangePassword}
@@ -152,6 +166,7 @@ export default function ProfilePage({
   );
 }
 
+// Styles specific to the ProfilePage
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
