@@ -9,7 +9,7 @@ import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
 
 // Use your local network IP when testing on Expo Go on mobile device iOS , ipconfig for windows / ifconfig for mac to get local ip guys
-export const API_URL = "http://192.168.2.157:8000/api/v1";
+export const API_URL = "http://3.133.119.34:8000/api/v1";
 
 export interface VerifyOtpResponse {
   message: string;
