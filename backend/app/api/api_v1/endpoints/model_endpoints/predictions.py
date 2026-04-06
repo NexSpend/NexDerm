@@ -181,7 +181,14 @@ def _build_and_store_report(
             conn.close()
 
 
-@router.post("/")
+@router.post("/",
+             summary="Analyze Skin Image",
+             description="""
+            Receives the image uploaded or captured by user and then run AI model inference to classify the disease.
+            
+            - Guest Users: Returns Prediction immediately. No data is saved.
+            - Logged-in Users: Returns the prediction immediately and triggers a background task to generate AI medical report. Then creates a pdf and saves it to the user's history securely via AWS S3.
+             """)
 async def classify_image(
     *,
     background_tasks: BackgroundTasks,
