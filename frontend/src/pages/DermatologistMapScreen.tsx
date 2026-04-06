@@ -1,3 +1,6 @@
+// DermatologistMapScreen.tsx
+
+// Imports
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -15,6 +18,7 @@ import * as Location from 'expo-location';
 import { commonStyles, colors } from '../utils/commonStyles';
 import AccountButton from './AccountButton';
 
+
 interface Dermatologist {
   name: string;
   address: string;
@@ -23,13 +27,22 @@ interface Dermatologist {
   lat?: number;
   lng?: number;
 }
-
+/**
+ * Props for the DermatologistMapScreen component.
+ * @property {function} onBackToResults - Callback to navigate the user back to the inference/results screen.
+ * @property {function} [onAccountPress] - Callback to open the account drawer.
+ * @property {string} [userName] - The user's display name for the account button.
+ */
 interface DermatologistMapScreenProps {
   onBackToResults: () => void;
   onAccountPress?: () => void;
   userName?: string;
 }
 
+/**
+Displays an interactive map and a list of nearby dermatologists based on the user's GPS location.
+Utilizes a WebView to leverage the Google Maps JavaScript API and Places API.
+ */
 export default function DermatologistMapScreen({
   onBackToResults,
   onAccountPress,
@@ -42,6 +55,7 @@ export default function DermatologistMapScreen({
   const [loading, setLoading] = useState(true);
   const [topDermatologists, setTopDermatologists] = useState<Dermatologist[]>([]);
 
+// Opens the default maps application with directions to the selected dermatologist
   const openMapsNavigation = (latitude: number, longitude: number, name: string) => {
     const url = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
     Linking.openURL(url).catch(() => {
@@ -49,6 +63,7 @@ export default function DermatologistMapScreen({
     });
   };
 
+  // On component mount, request location permissions and get the user's current location
   useEffect(() => {
     const getUserLocation = async () => {
       try {
@@ -61,7 +76,7 @@ export default function DermatologistMapScreen({
           setLoading(false);
           return;
         }
-
+        // Getting user location
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
@@ -81,7 +96,7 @@ export default function DermatologistMapScreen({
     getUserLocation();
   }, []);
 
-  if (loading) {
+  if (loading) { // Show loading state while fetching location and dermatologists
     return (
       <SafeAreaView style={commonStyles.container}>
         {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
@@ -93,7 +108,7 @@ export default function DermatologistMapScreen({
     );
   }
 
-  if (!userLocation) {
+  if (!userLocation) { // Show error state if location access is denied or fails
     return (
       <SafeAreaView style={commonStyles.container}>
         {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
@@ -112,7 +127,10 @@ export default function DermatologistMapScreen({
 
   // Build the HTML map with Google Places API
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-  
+
+  // --- WebView HTML Content ---
+  // This string contains a full HTML document that loads the Google Maps JS API.
+  // It posts the top 3 results for the dermatologist search
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -286,13 +304,13 @@ export default function DermatologistMapScreen({
       {onAccountPress && <AccountButton onPress={onAccountPress} userName={userName} />}
 
       <ScrollView style={styles.pageScroll} contentContainerStyle={styles.pageContent}>
-        {/* HEADER */}
+        {/* Header */}
         <View style={commonStyles.header}>
           <Text style={commonStyles.title}>🩺 NexDerm</Text>
           <Text style={commonStyles.subtitle}>Nearby dermatologists</Text>
         </View>
 
-        {/* MAP */}
+        {/* Map */}
         <View style={styles.mapContainer}>
           <WebView
             source={{ html: htmlContent }}
@@ -310,7 +328,7 @@ export default function DermatologistMapScreen({
           />
         </View>
 
-        {/* TOP 3 DERMATOLOGISTS */}
+        {/* Displaying top 3 dermatologists */}
         <View style={styles.listContainer}>
         <View style={styles.listHeader}>
           <View style={styles.listHeaderTopRow}>
@@ -362,7 +380,7 @@ export default function DermatologistMapScreen({
         )}
         </View>
 
-        {/* FOOTER BUTTON */}
+        {/* Footer Button */}
         <TouchableOpacity
           style={[commonStyles.primaryButton, styles.backButton]}
           onPress={onBackToResults}
@@ -374,6 +392,7 @@ export default function DermatologistMapScreen({
   );
 }
 
+// Styles specific to the DermatologistMapScreen Page
 const styles = StyleSheet.create({
   pageScroll: {
     flex: 1,

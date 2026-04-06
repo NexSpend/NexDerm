@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 /**
 This is the main CSS file for the project.
 This file contains common styles and a centralized color palette for the NexDerm app.

@@ -1,3 +1,6 @@
+// AuthScreen.tsx
+
+// Imports
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -21,13 +24,24 @@ import {
   verifyOtpCodePublic,
 } from '../services/api';
 
+
+
 type AuthMode = 'signin' | 'signup';
 
+/**
+This component is the main authentication page for the project.
+It facilitates both sign-in and sign-up flows, including OTP verification for enhanced security.
+@property {function} onAuthSuccess - Triggered when authentication AND OTP verification are complete. Passes the user's role ('user' | 'doctor').
+@property {function} onGuestContinue - Triggered when the user opts to bypass authentication.
+ */
 interface AuthScreenProps {
   onAuthSuccess: (role: string) => void;
   onGuestContinue: () => void;
 }
 
+/**
+Main component export.
+ */
 export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScreenProps) {
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
 
@@ -41,11 +55,13 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
           contentContainerStyle={commonStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header Section */}
           <View style={commonStyles.header}>
             <Text style={commonStyles.title}>🩺 NexDerm</Text>
             <Text style={commonStyles.subtitle}>AI-Powered Skin Lesion Detection</Text>
           </View>
 
+          {/* Body Section with Auth Tiles and Forms */}
           <View style={commonStyles.body}>
             <View style={styles.tileContainer}>
               <TouchableOpacity
@@ -57,6 +73,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
                 </Text>
               </TouchableOpacity>
 
+              {/* Sign up */}
               <TouchableOpacity
                 style={[styles.tile, authMode === 'signup' && styles.tileActive]}
                 onPress={() => setAuthMode('signup')}
@@ -66,7 +83,8 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
                 </Text>
               </TouchableOpacity>
             </View>
-
+            
+            {/* Sign in (Log in) */}
             {authMode === 'signin' ? (
               <SignInForm onAuthSuccess={onAuthSuccess} />
             ) : (
@@ -89,6 +107,10 @@ export default function AuthScreen({ onAuthSuccess, onGuestContinue }: AuthScree
   );
 }
 
+ /**
+ * Handles the Supabase email/password login flow.
+ * Intercepts successful logins to trigger the OTP verification screen.
+ */
 function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,7 +127,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password }); // authenticate with Supabase
 
       if (error) {
         throw error;
@@ -115,8 +137,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
       if (!token) {
         throw new Error('Could not get a Supabase access token.');
       }
-
-      await sendOtpCode(email, token);
+      await sendOtpCode(email, token); // trigger OTP code to be sent to user's email
       setSupabaseToken(token);
       setAwaitingOTP(true);
     } catch (error: any) {
@@ -130,6 +151,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     }
   };
 
+  // Resend OTP code if prompted by user
   const handleResendOTP = async () => {
     try {
       const { data } = await supabase.auth.getSession();
@@ -148,6 +170,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     }
   };
 
+// Forgot password flow - sends a reset email via Supabase
   const handleForgotPassword = async () => {
     if (!email) {
       Alert.alert('Enter Email', 'Please enter your email first.');
@@ -166,6 +189,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     }
   };
 
+  // Allows user to go back from OTP screen, signing them out of any active session
   const handleBackFromOTP = async () => {
     try {
       await supabase.auth.signOut();
@@ -175,6 +199,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
     setAwaitingOTP(false);
   };
 
+  // OTP form pop-up
   if (awaitingOTP) {
     return (
       <OTPVerificationForm
@@ -189,6 +214,7 @@ function SignInForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
   return (
     <View style={commonStyles.card}>
+      {/* Login Form */}
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Email</Text>
         <TextInput
@@ -240,6 +266,10 @@ interface OTPVerificationFormProps {
   onBack: () => void;
 }
 
+/**
+Handles the Multi-Factor Authentication (MFA) step.
+Verifies the 6-digit code against the backend and determines the user's role.
+ */
 function OTPVerificationForm({
   email,
   supabaseToken,
@@ -274,7 +304,7 @@ function OTPVerificationForm({
       if (userError || !user) {
         throw new Error('Could not get the authenticated user after verification.');
       }
-
+      // getting user data on successful verification to determine role and route accordingly
       const { data: userData, error: roleError } = await supabase
         .from('newUsers')
         .select('role')
@@ -310,7 +340,7 @@ function OTPVerificationForm({
         {'We sent a 6-digit code to\n'}
         <Text style={styles.otpEmail}>{email}</Text>
       </Text>
-
+    {/* OTP Input Field */}
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Verification Code</Text>
         <TextInput
@@ -365,6 +395,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
   const [awaitingOTP, setAwaitingOTP] = useState(false);
   const [supabaseToken, setSupabaseToken] = useState('');
 
+// Handles sign-up for first time users, creating a new Supabase account and triggering OTP verification
   const handleSignUp = async () => {
     if (!full_name || !email || !password || !confirmPassword) {
       Alert.alert('Missing Fields', 'Please fill in all fields.');
@@ -497,6 +528,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
 
   return (
     <View style={commonStyles.card}>
+      {/* Sign up form */}
       <View style={commonStyles.inputGroup}>
         <Text style={commonStyles.inputLabel}>Full Name</Text>
         <TextInput
@@ -567,6 +599,7 @@ function SignUpForm({ onAuthSuccess }: { onAuthSuccess: (role: string) => void }
   );
 }
 
+// Styles specific to the AuthScreen Page
 const styles = StyleSheet.create({
   tileContainer: {
     flexDirection: 'row',

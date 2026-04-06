@@ -1,3 +1,6 @@
+// AccountScreen.tsx
+
+// Imports
 import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -13,6 +16,12 @@ import { commonStyles, colors } from '../utils/commonStyles';
 import { getMedicalHistory } from '../services/api';
 import { supabase } from '../services/supabase';
 
+/**
+This file creates the Account Screen component. It allows users to view their account information 
+and their medical history of diagnoses. Users can switch between the "Account Info" and "Medical History" tabs to see their details.
+This page also provides a sign-out button for users.
+@property {function} onBackToMain - Callback to navigate the user back to the main dashboard.
+ */
 interface AccountScreenProps {
   onBackToMain: () => void;
 }
@@ -30,6 +39,9 @@ interface MedicalHistoryItem {
   notes?: string;
 }
 
+/**
+Final Component Export 
+ */
 export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistoryItem[]>([]);
@@ -40,6 +52,10 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
     loadAccountData();
   }, []);
 
+/**
+Retrieves user session data from Supabase and medical history from the API.
+Handles string formatting for names.
+*/
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
@@ -72,7 +88,8 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
       } else {
         setUserInfo(null);
       }
-
+      
+      // Fetch medical history from the backend API
       const historyData = await getMedicalHistory();
       setMedicalHistory(Array.isArray(historyData) ? historyData : []);
     } catch (error) {
@@ -84,7 +101,8 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
       setIsLoading(false);
     }
   };
-
+  
+  // Sign out function with confirmation alert
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
@@ -202,6 +220,7 @@ export default function AccountScreen({ onBackToMain }: AccountScreenProps) {
   );
 }
 
+// Styles specific to the AccountScreen Page
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
