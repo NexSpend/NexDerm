@@ -1,3 +1,8 @@
+# app/models/ml/model.py
+# This file contains the core machine learning logic for analyzing skin images.
+# It first uses AI to verify that an uploaded photo is actually skin, and then runs it 
+# through an ensemble of models to predict the specific condition and confidence score.
+
 from __future__ import annotations
 import pathlib
 from collections import Counter, defaultdict

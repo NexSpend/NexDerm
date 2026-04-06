@@ -1,4 +1,7 @@
 # app/api/api_v1/endpoints/dataBase_endpoints/dataBase_connection.py
+# This file establishes a secure connection to the PostgreSQL database.
+# It reads login credentials from environment variables and provides a
+# helper function to connect the application to the database securely.
 import os
 import psycopg2
 from dotenv import load_dotenv

@@ -1,3 +1,8 @@
+# app/services/ai_service.py
+# This file uses an external AI service to generate easy-to-understand medical explanations.
+# It takes the model's skin prediction and writes a patient-friendly report detailing 
+# symptoms, causes, and the recommended next steps.
+
 import os
 import httpx
 from dotenv import load_dotenv

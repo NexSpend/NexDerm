@@ -1,3 +1,8 @@
+# app/services/model_service.py
+# This file acts as an efficient bridge between the API and the machine learning models.
+# It ensures the heavy AI models are loaded into memory only once when the server starts,
+# saving time and computing resources by not having to reload them for every single request.
+
 import io
 import pathlib
 from typing import Any, Dict, Optional
