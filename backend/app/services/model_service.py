@@ -1,3 +1,8 @@
+# app/services/model_service.py
+# This file acts as an efficient bridge between the API and the machine learning models.
+# It ensures the heavy AI models are loaded into memory only once when the server starts,
+# saving time and computing resources by not having to reload them for every single request.
+
 import io
 import pathlib
 from typing import Any, Dict, Optional
@@ -6,7 +11,6 @@ import torch
 from PIL import Image
 
 from app.core.config import settings
-# Ensure you import the new wrapper from wherever you placed it
 from app.models.ml.model import EnsembleDiseaseClassifier, SkinFilterWrapper
 
 
@@ -35,7 +39,7 @@ class ModelService:
             "w_resnet": float(settings.ENSEMBLE_WEIGHT_RESNET),
         }
 
-        # 1. Load the underlying ensemble
+        
         ensemble = EnsembleDiseaseClassifier(config=config)
         ensemble.load_from_checkpoints(
             [
@@ -54,8 +58,8 @@ class ModelService:
             ],
         )
 
-        # 2. Wrap it with the CLIP skin filter
-        # (Optional: You can add SKIN_FILTER_THRESHOLD to your config settings later)
+        
+        
         threshold = getattr(settings, "SKIN_FILTER_THRESHOLD", 0.7)
         pipeline = SkinFilterWrapper(disease_ensemble=ensemble, threshold=threshold)
 
@@ -69,8 +73,8 @@ class ModelService:
         if self.classifier_pipeline is None:
             raise RuntimeError("Model pipeline is not loaded.")
 
-        # The SkinFilterWrapper handles the logic and returns the structured dictionary
+        
         return self.classifier_pipeline.smart_predict(image)
 
-# Global instance reused across API routes
+
 model_service = ModelService()

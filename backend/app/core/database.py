@@ -4,16 +4,16 @@ from sqlalchemy.ext.declarative import declarative_base
 from app.core.config import settings
 from sqlalchemy.orm import declarative_base
 
-# --- Create SQLAlchemy Engine ---
+# Create SQLAlchemy Engine
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
 
-# --- Create a SessionLocal class ---
+# Create a SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# --- Create a Base class ---
+# Create a Base class
 Base = declarative_base()
 
-# --- Dependency for API endpoints ---
+# Dependency for API endpoints
 def get_db():
     db = SessionLocal()
     try:
