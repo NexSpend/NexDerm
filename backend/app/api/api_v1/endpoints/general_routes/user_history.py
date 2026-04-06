@@ -1,3 +1,8 @@
+# app/api/api_v1/endpoints/general_routes/user_history.py
+# This file retrieves a complete history of a user's past skin analysis reports.
+# It fetches previous AI predictions and doctor notes from the database, and creates 
+# temporary cloud links so users can view their past images and download PDFs.
+
 from fastapi import APIRouter, Header
 from typing import Optional
 from app.services.auth_service import get_current_user_id

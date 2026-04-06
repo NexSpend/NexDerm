@@ -1,3 +1,8 @@
+# app/api/api_v1/endpoints/doctor_routes.py
+# This file provides dedicated API endpoints for medical professionals.
+# It allows doctors to view a queue of pending patient skin condition cases 
+# and submit their own clinical notes and final diagnoses.
+
 from fastapi import APIRouter, Depends, HTTPException, Header
 from typing import Optional, List
 from pydantic import BaseModel

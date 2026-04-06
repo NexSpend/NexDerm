@@ -1,9 +1,7 @@
-"""
-backend/app/api/api_v1/endpoints/model_endpoints/predictions.py
-
-1. ML inference → return prediction to user immediately (~5s)
-2. AI text + PDF + S3 + DB → background task (doesn't block response)
-"""
+# app/api/api_v1/endpoints/model_endpoints/predictions.py
+# This file handles the core AI image analysis for the application.
+# It receives uploaded skin images, predicts possible conditions using the machine learning model,
+# and triggers background tasks to securely generate and save detailed PDF reports.
 
 from fastapi import APIRouter, BackgroundTasks, UploadFile, File, Header, HTTPException
 from typing import Optional
@@ -23,9 +21,6 @@ router = APIRouter()
 s3_service = S3Service()
 
 
-# -----------------------------
-# Risk classification helpers
-# -----------------------------
 HIGH_RISK_DISEASES = {
     "Actinic keratoses",
     "Basal cell carcinoma",
@@ -50,18 +45,17 @@ NO_RISK_DISEASES = {
 }
 
 
+# cleans up the label string to prevent matching errors
 def _normalize_label(label: str) -> str:
-    """Normalize label text for safer matching."""
+    # fallback to empty string if label is missing
     return (label or "").strip()
 
 
+# maps a disease label to its corresponding risk category
 def _get_risk_level(label: str) -> str:
-    """
-    App-level risk mapping based on disease label, not confidence.
-    You can adjust these groups later if your capstone supervisor/team wants different logic.
-    """
     normalized_label = _normalize_label(label)
 
+    # return exact risk match if found in our sets
     if normalized_label in NO_RISK_DISEASES:
         return "No Risk"
     if normalized_label in HIGH_RISK_DISEASES:
@@ -69,62 +63,59 @@ def _get_risk_level(label: str) -> str:
     if normalized_label in LOW_RISK_DISEASES:
         return "Low Risk"
 
-    # Safe fallback for unknown labels
+    # default to low risk for unmapped diseases
     return "Low Risk"
 
 
+# formats the raw confidence score into a standard percentage
 def _to_confidence_percentage(confidence: float) -> float:
-    """
-    Convert confidence into a percentage.
-    Supports both:
-    - 0 to 1 scale  -> converted to 0 to 100
-    - 0 to 100 scale -> kept as is
-    """
     if confidence is None:
         return 0.0
 
+    # catch malformed data before math operations
     try:
         confidence = float(confidence)
     except (TypeError, ValueError):
         return 0.0
 
+    # scale up decimals to full percentages
     if 0.0 <= confidence <= 1.0:
         return confidence * 100.0
     return confidence
 
 
+# generates a warning text if the model is not confident enough
 def _get_low_confidence_warning(confidence: float) -> Optional[str]:
-    """
-    Return a warning message if confidence is below 60%.
-    """
     confidence_percentage = _to_confidence_percentage(confidence)
+
+    # flag predictions that fall below the 60 percent threshold
     if confidence_percentage < 60.0:
         return "Confidence is low, so the result may be uncertain."
     return None
 
 
+# constructs the final dictionary sent back to the client
 def _build_response_payload(label: str, confidence: float, report_id: Optional[str] = None) -> dict:
-    """
-    Build API response payload while keeping old fields intact.
-    """
     confidence_percentage = _to_confidence_percentage(confidence)
     risk_level = _get_risk_level(label)
     low_confidence_warning = _get_low_confidence_warning(confidence)
 
     response = {
         "prediction": label,
-        "confidence": confidence,  # original value kept unchanged for compatibility
+        "confidence": confidence,
         "confidence_percentage": round(confidence_percentage, 2),
         "risk_level": risk_level,
         "low_confidence_warning": low_confidence_warning,
     }
 
+    # attach the report ID only if one was generated
     if report_id is not None:
         response["report_id"] = report_id
 
     return response
 
 
+# handles async report generation and uploads files to s3 and the database
 def _build_and_store_report(
     user_id: str,
     report_id: str,
@@ -134,22 +125,26 @@ def _build_and_store_report(
     image_filename: str,
     image_content_type: str,
 ):
-    """Runs after response is sent. Generates AI text → PDF → S3 → DB."""
     conn = cursor = None
     try:
         print(f"[bg] generating report for {report_id}")
 
-        report_text = generate_report(label, confidence)  # plain string from AI
+        # fetch plain text medical analysis from ai model
+        report_text = generate_report(label, confidence)
 
         image_ext = "jpg"
+        # extract file extension safely if present
         if image_filename and "." in image_filename:
             image_ext = image_filename.rsplit(".", 1)[-1].lower()
 
         image_content_type = image_content_type or "image/jpeg"
         image_s3_key = f"reports/{user_id}/{report_id}/input_image.{image_ext}"
+        
+        # push raw image data up to the s3 bucket
         s3_service.upload_image_bytes(image_bytes, image_s3_key, image_content_type)
         print("STEP 7: image uploaded to S3, key =", image_s3_key)
 
+        # compile all report components into a final pdf byte stream
         pdf_bytes = generate_prediction_report_pdf(
             patient_id=user_id,
             report_id=report_id,
@@ -159,9 +154,11 @@ def _build_and_store_report(
         )
 
         report_s3_key = f"reports/{user_id}/{report_id}/report.pdf"
+        # upload the generated pdf alongside the original image
         s3_service.upload_pdf_bytes(pdf_bytes, report_s3_key)
         print(f"[bg] uploaded → {report_s3_key}")
 
+        # connect to db to link s3 keys to the current report record
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -175,12 +172,14 @@ def _build_and_store_report(
         print(f"[bg] ERROR: {e}")
         traceback.print_exc()
     finally:
+        # ensure db resources are released even if an error occurs
         if cursor:
             cursor.close()
         if conn:
             conn.close()
 
 
+# processes uploaded images to run inference and conditionally kicks off report generation
 @router.post("/",
              summary="Analyze Skin Image",
              description="""
@@ -196,9 +195,9 @@ async def classify_image(
     authorization: Optional[str] = Header(None),
 ):
     try:
-        # Auth
         user_id = None
         try:
+            # attempt to extract user identity from the auth header
             if authorization and authorization.strip():
                 user_id = get_optional_current_user_id(authorization)
         except Exception:
@@ -206,16 +205,20 @@ async def classify_image(
 
         print("STEP 1: user_id =", user_id)
 
-        # Read image
+        # load image data directly into memory
         image_bytes = await file.read()
         print("STEP 2: image read, bytes =", len(image_bytes))
+        
         try:
+            # convert uploaded bytes into an rgb image object
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid image file.")
 
-        # ML inference
+        # hand off to the model service for actual disease prediction
         result = model_service.smart_predict(image)
+        
+        # reject non-skin images based on model feedback
         if not result.get("is_skin", True):
             raise HTTPException(status_code=400, detail=result.get("message", "Please upload a skin image."))
 
@@ -223,15 +226,17 @@ async def classify_image(
         confidence = result["confidence"]
         print(f"STEP 3: prediction done = {label} {confidence}")
 
-        # Guest — return immediately, no report
+        # bail out early for guests since they do not get saved reports
         if not user_id:
             return _build_response_payload(label=label, confidence=confidence)
 
-        # Insert placeholder row
+        # reserve a unique identifier for the upcoming report
         report_id = str(uuid4())
         conn = get_connection()
         cursor = conn.cursor()
+        
         try:
+            # drop a pending placeholder row into the db so the user sees it immediately
             cursor.execute(
                 "INSERT INTO reports (id, user_id, prediction, confidence, report_s3_key, report_file_name) VALUES (%s, %s, %s, %s, %s, %s);",
                 (report_id, user_id, label, confidence, "", "pending"),
@@ -241,7 +246,7 @@ async def classify_image(
             cursor.close()
             conn.close()
 
-        # Fire background task
+        # offload the heavy pdf and s3 tasks to a background worker
         background_tasks.add_task(
             _build_and_store_report,
             user_id=str(user_id),

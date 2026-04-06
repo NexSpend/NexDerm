@@ -1,3 +1,8 @@
+# app/api/api_v1/endpoints/general_routes/report_route.py
+# This file provides API endpoints for users to access their medical AI skin analysis reports.
+# It allows users to view their most recent predictions and generates secure, temporary 
+# links to download the corresponding PDF reports stored in AWS S3.
+
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
 

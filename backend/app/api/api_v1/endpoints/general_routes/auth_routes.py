@@ -1,3 +1,8 @@
+# app/api/api_v1/endpoints/general_routes/auth_routes.py
+# This file manages user authentication by handling all One-Time Password (OTP) requests.
+# It provides endpoints to send and verify 6-digit security codes for both new 
+# user sign-ups and existing users performing sensitive account actions.
+
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional

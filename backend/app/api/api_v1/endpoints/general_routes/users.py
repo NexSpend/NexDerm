@@ -1,4 +1,7 @@
-# app/api/users.py
+# app/api/api_v1/endpoints/general_routes/users.py
+# This file handles user profile information for the application.
+# It provides a secure endpoint to fetch the currently logged-in user's name and email.
+
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
 from app.services.auth_service import get_current_user_id

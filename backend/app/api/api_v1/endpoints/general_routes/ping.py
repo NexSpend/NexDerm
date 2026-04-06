@@ -1,3 +1,8 @@
+# app/api/api_v1/endpoints/general_routes/ping.py
+# This file provides simple health-check endpoints for the application.
+# It allows you to quickly verify that the backend server is awake 
+# and can successfully communicate with the database.
+
 from fastapi import APIRouter
 from sqlalchemy import text
 from app.core.database import engine

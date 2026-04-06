@@ -1,3 +1,8 @@
+# app/api/api_v1/api.py
+# This file serves as the main hub for all the API routes in the backend.
+# It brings together different endpoints—like authentication, AI predictions, and user data—
+# and connects them into a single router for the main application to use.
+
 from fastapi import APIRouter
 
 from app.api.api_v1.endpoints.general_routes import report_route
