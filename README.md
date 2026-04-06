@@ -41,10 +41,20 @@ Install these before working on the project:
 - npm
 - Git
 
+Recommended development environment:
+
+- Linux or macOS is recommended for the smoothest setup and tooling experience
+- Windows works, but use PowerShell and a virtual environment
+
 Recommended on Windows:
 
 - Use the repo virtual environment at `.venv`, or create one with `python -m venv .venv`
 - Use PowerShell
+
+Recommended on Linux or macOS:
+
+- Create and activate a virtual environment with `python3 -m venv .venv` and `source .venv/bin/activate`
+- Use a standard shell such as `bash` or `zsh`
 
 ## Backend Setup
 
@@ -54,6 +64,14 @@ From the repo root:
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 pip install -r backend\requirements-test.txt
+```
+
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+pip install -r backend/requirements-test.txt
 ```
 
 Create `backend/.env` with the variables the backend expects:
@@ -99,6 +117,14 @@ cd backend
 ..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+cd backend
+../.venv/bin/python -m uvicorn app.main:app --reload
+```
+
 Backend URLs:
 
 - App root: `http://127.0.0.1:8000/`
@@ -110,6 +136,13 @@ Backend URLs:
 From the `frontend` directory:
 
 ```powershell
+cd frontend
+npm install
+```
+
+Linux/macOS:
+
+```bash
 cd frontend
 npm install
 ```
@@ -135,6 +168,12 @@ From `frontend`:
 npm start
 ```
 
+Linux/macOS:
+
+```bash
+npm start
+```
+
 Other available scripts:
 
 ```powershell
@@ -154,10 +193,25 @@ From the repo root:
 pytest backend
 ```
 
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+pytest backend
+```
+
 Or from inside `backend`:
 
 ```powershell
 cd backend
+pytest
+```
+
+Linux/macOS:
+
+```bash
+cd backend
+source ../.venv/bin/activate
 pytest
 ```
 
@@ -166,6 +220,15 @@ Useful pytest commands:
 ```powershell
 pytest backend -q
 pytest backend\tests\test_model.py
+pytest backend -m integration
+pytest backend --cov=app --cov-report=term-missing
+```
+
+Linux/macOS:
+
+```bash
+pytest backend -q
+pytest backend/tests/test_model.py
 pytest backend -m integration
 pytest backend --cov=app --cov-report=term-missing
 ```
@@ -189,6 +252,12 @@ Important test behavior:
 From `frontend`:
 
 ```powershell
+npm test
+```
+
+Linux/macOS:
+
+```bash
 npm test
 ```
 
@@ -228,6 +297,30 @@ pytest backend
 # backend server
 cd backend
 ..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+# frontend install
+cd frontend
+npm install
+
+# frontend dev server
+npm start
+
+# frontend tests
+npm test
+```
+
+Linux/macOS:
+
+```bash
+# activate venv
+source .venv/bin/activate
+
+# backend tests
+pytest backend
+
+# backend server
+cd backend
+../.venv/bin/python -m uvicorn app.main:app --reload
 
 # frontend install
 cd frontend
