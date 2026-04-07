@@ -288,7 +288,7 @@ If you want a minimal first-time setup:
 The preferred way to test the application is to run the frontend using Expo:
 
 1. Clone the repository and navigate to the frontend:
-   git clone [<repo-url>](https://github.com/NexSpend/NexDerm)
+   git clone The repo using github
    cd NexDerm/frontend
 
 2. Install dependencies:
