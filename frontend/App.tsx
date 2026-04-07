@@ -532,7 +532,7 @@ Displays a loading screen while waiting for the response.
         </View>
       </SafeAreaView>
 
-      // Account Drawer (accessible from all main screens)
+      {/* Account Drawer (accessible from all main screens)*/}
       <AccountDrawer
         isVisible={showAccount}
         onClose={() => setShowAccount(false)}

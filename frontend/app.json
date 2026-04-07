@@ -1,30 +1,51 @@
 {
-    "expo": {
-        "name": "frontend",
-        "slug": "frontend",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/logo.png",
-        "userInterfaceStyle": "light",
-        "newArchEnabled": true,
-        "splash": {
-            "image": "./assets/logo.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#ffffff"
-        },
-        "ios": {
-            "supportsTablet": true
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/logo.png",
-                "backgroundColor": "#ffffff"
-            },
-            "edgeToEdgeEnabled": true,
-            "predictiveBackGestureEnabled": false
-        },
-        "web": {
-            "favicon": "./assets/logo.png"
+  "expo": {
+    "name": "NexDerm",
+    "slug": "nexderm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nexderm.app"
+    },
+    "android": {
+      "package": "com.nexderm.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "81f26279-451d-4b07-a10a-0b6dfa6fb636"
+      }
     }
+  }
 }
