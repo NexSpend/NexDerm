@@ -287,9 +287,7 @@ If you want a minimal first-time setup:
 
 The preferred way to test the application is to run the frontend using Expo:
 
-1. Clone the repository and navigate to the frontend:
-   git clone The repo using github
-   cd NexDerm/frontend
+1. Clone the repository and navigate to the frontend
 
 2. Install dependencies:
    npm install
