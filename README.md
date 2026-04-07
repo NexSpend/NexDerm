@@ -283,6 +283,35 @@ If you want a minimal first-time setup:
 9. Run backend tests with `pytest backend`.
 10. Run frontend tests with `npm test`.
 
+## Preferred Way to Run the App (Quick Testing)
+
+The preferred way to test the application is to run the frontend using Expo:
+
+1. Clone the repository and navigate to the frontend:
+   git clone [<repo-url>](https://github.com/NexSpend/NexDerm)
+   cd NexDerm/frontend
+
+2. Install dependencies:
+   npm install
+
+3. Start the Expo development server:
+   npm start
+
+4. Download the Expo Go app on your mobile device.
+
+5. Scan the QR code shown in the terminal to launch the app on your phone.
+
+This is the fastest and most reliable way to run and test the application.
+
+## Alternative Method (APK)
+
+An alternative way to run the app is by using the provided APK:
+
+- Install the APK on an Android device or run it using an Android emulator (e.g., Android Studio).
+- Launch the app directly from the installed APK.
+
+Note: While the APK version is functional, we are still working on improving compatibility across different devices. Some issues may occur depending on the device or environment.
+
 ## Common Commands
 
 From the repo root:
