@@ -211,8 +211,9 @@ Helper to display an alert block for guest users trying to access protected rout
 */
   const createSwipeGestureHandler = () => {
     return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => 
+        Math.abs(gestureState.dx) > 10 && gestureState.vx > 0.5,
       onPanResponderRelease: (
         evt: GestureResponderEvent,
         gestureState: PanResponderGestureState
